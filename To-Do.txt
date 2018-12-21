@@ -1,0 +1,21 @@
+Arena design
+Materials required:
+01. Thermocol Sheets
+
+Box: 6x6x6 cm - 2 numbers of each color RGBY
+AntHill Walls:
+1. [67 cm x 1 cm x 20 cm] x 1
+2. [37.2 cm x 1 cm x 20 cm] x 2
+3. [12.5 cm x 1 cm x 20 cm] x 2
+
+Extra:
+>> Make a program to generate an Aruco code of 7x7 of 1000 Combinations with given particular number
+
+Robot:
+>> Line Sensors
+>> PiCam - to identify ArUco and Service blocks
+>> Glow RGB LED after identifying the blocks
+>> Pick and Place mechanism
+>> After all the service, come to start and beep buzzer for 5 seconds
+>> Maximum width - 40 cms
+>> Maximum Length - 15 cms
