@@ -188,12 +188,13 @@ image_dict = {
               "Image2.jpg" : [(green, "circle"), (red, "circle")],
               "Image3.jpg" : [(None, None), (blue, "square")],
               "Image4.jpg" : [(blue, "square"), (green, "triangle")],
-              "Image5.jpg" : [(blue, "circle"), (green, "square")]
+              "Image5.jpg" : [(blue, "circle"), (green, "square")],
+              "Aruco_detection.JPG" : [(None, None), (None, None)]
              }
 # --------------------------------------------------------------------------------- #
 
 if __name__ == "__main__": 
     # Choose which image to open here. The image has to be in the same folder as the code
-    image_path = "Image5.jpg"
+    image_path = "Aruco_detection.JPG"
    
     aruco_detect(image_path)
