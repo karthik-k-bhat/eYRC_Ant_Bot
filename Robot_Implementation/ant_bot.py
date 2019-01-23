@@ -1,36 +1,36 @@
 from ant_hill import ah
 
-Up = 0
-Right = 1
-Down = 2
-Left = 3
+UP = 0
+RIGHT = 1
+DOWN = 2
+LEFT = 3
 
 class ab:
 
     def __init__(self):
         self.position = -1
-        self.direction = Up
+        self.direction = UP
         self.map = {
-            -16: Down,
-            -15: Left,
-            -14: Right,
-            -13: Left,
-            -12: Right,
-            -11: Left,
-            -10: Right,
-             -9: Left,
-             -8: Right,
-             -7: Up,
-             -6: Up,
-             -5: Up,
-             -4: Up,
-             -3: Up,
-             -2: Up,
-             -1: Up,
+            -16: DOWN,
+            -15: LEFT,
+            -14: RIGHT,
+            -13: LEFT,
+            -12: RIGHT,
+            -11: LEFT,
+            -10: RIGHT,
+             -9: LEFT,
+             -8: RIGHT,
+             -7: UP,
+             -6: UP,
+             -5: UP,
+             -4: UP,
+             -3: UP,
+             -2: UP,
+             -1: UP,
               0: [{-16,-15,-14,-13,-12,-11,-10,-9,-8,1,2,9,10,11,12,13,14},{-7,-6,-5,6,7,8},{-1},{-4,-3,-2,3,4,5}],
-              1: [{},{},{},{}],
-              2: [{},{},{},{}],
-              3: [{},{},{},{}],
+              1: [{-16,2},{-13,-12,-11,-10,12,13},{-7,-6,-5,-4,-3,-2,-1,0,3,4,5,6,7,8},{-15,-14,-9,-8,9,11,14}],
+              2: [{-16},{},{-15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,3,4,5,6,7,8,9,10,11,12,13,14},{}],
+              3: [{},{-16,-15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-1,0,1,2,6,7,8,9,10,11,12,13,14},{-2},{-4,-3,4,5}],
               4: [{},{},{},{}],
               5: [{},{},{},{}],
               6: [{},{},{},{}],
@@ -72,10 +72,16 @@ class ab:
             self.turn(45)
             self.block_list.append(self.get_block_colour())
         self.turn(45)
-        self.move_to_node(1)
+        self.move_to_node(0)
 
     def get_sims(self):
-    	pass
+    	self.move_to_node(1)
+        self.turn(-45)
+        for i in range(4):
+            id = self.get_sim_id()
+            self.ah_list.append(ah(id))
+            self.turn(90)
+        self.turn(45)
 
     def move(self, direction):
         pass
@@ -95,6 +101,8 @@ class ab:
     def service(self,ah):
         pass
 
+    def get_sim_id(self):
+        pass
     
 
 if __name__ == "__main__":
