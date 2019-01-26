@@ -1,5 +1,8 @@
 import serial
+import detection
 from ant_hill import ah
+from picamera import PiCamera 
+from picamera.array import PiRGBArray
 
 NORTH = 0
 NORTH_EAST = 0.5
@@ -15,7 +18,16 @@ class ab:
     def __init__(self):
         self.position = -1
         self.direction = NORTH
+        self.serial_communication = serial.Serial('/dev/ttyUSB0',9600)
         
+        res = (608, 368)    # resolution for the frame
+
+        self.camera = PiCamera()      # To initialize the PiCamera
+        self.camera.resolution = res  # set the resolution of the camera
+        self.camera.rotation = 180    # to rotate the frames by 180 degrees
+        self.camera.framerate = 16    # Set the frame rate
+        self.rawCapture = PiRGBArray(self.camera, size=res)
+
         self.arena_map = {
             -16: SOUTH,-15: WEST,-14: EAST,-13: WEST,-12: EAST,-11: WEST,-10: EAST,-9: WEST,-8: EAST,-7: NORTH,-6: NORTH,-5: NORTH,-4: NORTH,-3: NORTH,-2: NORTH,-1: NORTH,
               0: [{-16,-15,-14,-13,-12,-11,-10,-9,-8,1,2,9,10,11,12,13,14},{-7,-6,-5,6,7,8},{-1},{-4,-3,-2,3,4,5}],
@@ -59,9 +71,13 @@ class ab:
 
     def run(self):
 
-        self.get_blocks()
-        self.get_sims()
+        #self.get_block_colour()
         
+        self.get_sims()
+        self.move_to_node(-4)
+        self.talk_to_arduino("P,0") #Pick Block
+        
+        '''
         for ah in self.ah_list:
             if(self.is_qah(ah)):
                 self.service(ah)
@@ -70,44 +86,66 @@ class ab:
 
         for ah in self.ah_list:
             self.service(ah)
+        '''
 
-    def get_blocks(self):
+    def get_block_colour(self):
         self.move_to_node(4)
         for _ in range(3):
             self.turn(-45)
-            self.block_list.append(self.get_block_colour())
+            self.block_list.append(self.detect_colour())
         self.turn(-45)
         self.move_to_node(7)
         for _ in range(3):
             self.turn(45)
-            self.block_list.append(self.get_block_colour())
+            self.block_list.append(self.detect_colour())
         self.turn(45)
         self.move_to_node(0)
 
     def get_sims(self):
         self.move_to_node(1)
-        self.turn(-45)
-        for _ in range(4):
-            id = self.get_sim_id()
-            self.ah_list.append(ah(id))
+        
+        for i in range(2):
+            self.move(self.direction,1)
             self.turn(90)
-        self.turn(45)
+            self.camera.capture("picture"+str(i*2)+".jpg")
+            self.rawCapture.truncate(0)
+            id = detection.detect_sim_id("./picture"+str(i*2)+".jpg")
+            print(id)
+            self.turn(180)
+            self.camera.capture("picture"+str(i*2+1)+".jpg")
+            self.rawCapture.truncate(0)
+            id = detection.detect_sim_id("./picture"+str(i*2+1)+".jpg")
+            print(id)
+            self.turn(-90)
+            self.move(self.direction,1)
 
     def move(self, direction, distance = 0):
-        pass
-    
-    def turn(self, direction):
-        pass
+        turn_angle = (direction - self.direction)*90
+        if(turn_angle>180):
+            turn_angle = 360 - turn_angle
+        self.turn(turn_angle)
+        self.position = self.immediate_node[self.position][direction]
+        print("Moving to node",self.position)
+        self.talk_to_arduino("M,"+str(distance))
+
+    def turn(self, angle):
+        self.direction = (self.direction + angle/90)%4
+        print("Turning by",angle,"degrees")
+        print("Now facing",self.direction)
+        encoded_angle = ((angle+180)*8)//360
+        self.talk_to_arduino("T,"+str(encoded_angle))
 
     def move_to_node(self,node_number):
         while self.position != node_number:
-            for i in range(4):
-                if node_number in self.arena_map[self.position][i]:
-                    self.move(i)
-                    self.position = self.immediate_node[self.position][i]
-                    break
+            if(self.position<0):
+                self.move(self.arena_map[self.position])
+            else:
+                for i in range(4):
+                    if node_number in self.arena_map[self.position][i]:
+                        self.move(i)
+                        break
 
-    def get_block_colour(self):
+    def detect_colour(self):
         pass
 
     def is_qah(self,ah):
@@ -118,7 +156,21 @@ class ab:
 
     def get_sim_id(self):
         return 0
-    
+
+    def talk_to_arduino(self,message):
+        string = "Z"
+        encoded_string = string.encode()
+        
+        while(1):
+            self.serial_communication.write(encoded_string)
+            if(self.serial_communication.in_waiting>0):
+                response = self.serial_communication.readline()
+            if response == "1":
+                break
+        
+        action,value = message.split(",")
+        self.serial_communication.write(action.encode())
+        self.serial_communication.write(value.encode())
 
 if __name__ == "__main__":
     bot = ab()
