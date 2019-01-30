@@ -1,21 +1,28 @@
-#define Kp 2                          // experiment to determine this, start by something small that just makes your bot follow the line at a slow speed
-#define Kd 8                          // experiment to determine this, slowly increase the speeds and adjust this value. ( Note: Kp < Kd) 
+#define Kp 4                           // experiment to determine this, start by something small that just makes your bot follow the line at a slow speed
+#define Kd 16                          // experiment to determine this, slowly increase the speeds and adjust this value. ( Note: Kp < Kd) 
 
-#define left_line_sensor 5
-#define center_line_sensor 5
-#define right_line_sensor 5
+#define left_line_sensor A0
+#define center_line_sensor A1
+#define right_line_sensor A2
 
 #define right_motor_max_pwm 255
 #define left_motor_max_pwm 255
 #define right_motor_base_pwm 210
 #define left_motor_base_pwm 210
 
-#define forward_right_motor 3
-#define backward_right_motor 4
-#define enable_right_motor 5
-#define forward_left_motor 12
-#define backward_left_motor 13
-#define enable_left_motor 11
+#define forward_right_motor 7
+#define backward_right_motor 12
+#define enable_right_motor 2
+
+#define forward_left_motor 11
+#define backward_left_motor 12
+#define enable_left_motor 3
+
+#define buzzer X
+#define red_led R
+#define green_led G
+#define blue_led B
+
 
 int left_sensor_threshold;
 int center_sensor_threshold;
@@ -33,11 +40,12 @@ void setup()
   pinMode(enable_left_motor, OUTPUT);
 
   line_sensor_calibrate();
+  initialize_pick_place();
 }
 
 void loop()
 {
-  while(movement());
+  
 }
 
 int movement()
@@ -45,7 +53,7 @@ int movement()
   int error = get_bot_position();
   int right_motor_pwm = 0;
   int left_motor_pwm = 0;
-  if (error < 3)
+  if (abs(error) < 2)
   {
      int motorSpeed = Kp * error + Kd * (error - lastError);
      lastError = error;
@@ -55,7 +63,7 @@ int movement()
         left_motor_pwm = left_motor_base_pwm - motorSpeed;
         set_movement_direction();
      }
-     else if (robot_movement_direction == -1)                      // -1 - Backward
+     else if (robot_movement_direction == -1)                     // -1 - Backward
      {
         right_motor_pwm = right_motor_base_pwm - motorSpeed;
         left_motor_pwm = left_motor_base_pwm + motorSpeed;
@@ -142,20 +150,18 @@ int get_bot_position()
   int center_sensor_value = analogRead(center_line_sensor);
   int right_sensor_value = analogRead(right_line_sensor);
 
+  /*  Black Line: "Greater than/equal to" sensor_threshold
+   *  White Line: "Lesser than/equal to" sensor_threshold
+   */
+  
   if (left_sensor_value <= left_sensor_threshold &&
       center_sensor_value <= center_sensor_threshold &&
       right_sensor_value >= right_sensor_threshold)
   {
-    // FULL RIGHT CONDITION;
-    return -2;
+    // RIGHT CONDITION;
+    return 1;
   }
-  else if (left_sensor_value <= left_sensor_threshold &&
-           center_sensor_value >= center_sensor_threshold &&
-           right_sensor_value >= right_sensor_threshold)
-  {
-    // SOFT RIGHT CONDITION;
-    return -1;
-  }
+  
   else if (left_sensor_value <= left_sensor_threshold &&
            center_sensor_value >= center_sensor_threshold &&
            right_sensor_value <= right_sensor_threshold)
@@ -163,25 +169,44 @@ int get_bot_position()
     // STRAIGHT LINE CONDITION;
     return 0;
   }
+  
   else if (left_sensor_value >= left_sensor_threshold &&
            center_sensor_value <= center_sensor_threshold &&
            right_sensor_value <= right_sensor_threshold)
   {
-    // FULL LEFT CONDITION;
-    return 1;
+    // LEFT CONDITION;
+    return -1;
   }
+  
+  else if (left_sensor_value <= left_sensor_threshold &&
+           center_sensor_value >= center_sensor_threshold &&
+           right_sensor_value >= right_sensor_threshold)
+  {
+    // RIGHT BRANCHED-NODE CONDITION;
+    return 2;
+  }
+  
   else if (left_sensor_value >= left_sensor_threshold &&
            center_sensor_value >= center_sensor_threshold &&
            right_sensor_value <= right_sensor_threshold)
   {
-    // SOFT LEFT CONDITION;
-    return 2;
+    // LEFT BRANCHED-NODE CONDITION;
+    return -2;
   }
-  else if (left_sensor_value >= left_sensor_threshold &&
-           center_sensor_value >= center_sensor_threshold &&
-           right_sensor_value >= right_sensor_threshold)
+  
+  else if ((left_sensor_value >= left_sensor_threshold &&
+            center_sensor_value >= center_sensor_threshold &&
+            right_sensor_value >= right_sensor_threshold)
   {
-    // NODE CONDITION;
+    // T-NODE CONDITION;
     return 3;
+  }
+
+  else if ((left_sensor_value <= left_sensor_threshold &&
+            center_sensor_value <= center_sensor_threshold &&
+            right_sensor_value <= right_sensor_threshold)
+  {
+    // WHITE SPACE CONDITION;
+    return -3;
   }
 }
