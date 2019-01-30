@@ -1,105 +1,83 @@
-const int en_a = 2;
-const int in_a1 = 3;
-const int in_a2 = 4;
-const int in_b1 = 5;
-const int in_b2 = 6;
-const int en_b = 7;
+#define enable_left_motor 
+#define enable_right_motor 
+#define forward_left_motor 
+#define backward_left_motor 
+#define forward_right_motor 
+#define backward_right_motor 
+#define rpm 50
+#define length_of_shaft
+#define wheel_diameter
 
 void setup()
 {
-   Serial.begin(9600);
-   pinMode(en_a, OUTPUT);
-   pinMode(en_b, OUTPUT);
-   pinMode(in_a1, OUTPUT);
-   pinMode(in_a2, OUTPUT);
-   pinMode(in_b1, OUTPUT);
-   pinMode(in_b2, OUTPUT);
+    pinMode(enable_left_motor, OUTPUT);
+    pinMode(enable_right_motor, OUTPUT);
+    pinMode(forward_left_motor, OUTPUT);   
+    pinMode(backward_left_motor, OUTPUT);
+    pinMode(forward_right_motor, OUTPUT);
+    pinMode(backward_right_motor, OUTPUT);
 }
-int inertia_time = 0;
+
+void movement(int distance)
+{
+    if(distance > 0)
+    {
+        digitalWrite(forward_left_motor, HIGH);
+        digitalWrite(forward_right_motor, HIGH);
+        digitalWrite(backward_left_motor, LOW);
+        digitalWrite(backward_right_motor, LOW);
+    }
+    else if(distance < 0)
+    {
+        digitalWrite(forward_left_motor, HIGH);
+        digitalWrite(forward_right_motor, HIGH);
+        digitalWrite(backward_left_motor, LOW);
+        digitalWrite(backward_right_motor, LOW);
+    }
+    motor_start_time = millis();
+    motor_stop_time = abs(distance*60)/(rpm*3.142*wheel_diameter)
+    motor_start_flag = 1;
+    digitalWrite(enable_left_motor, HIGH);
+    digitalWrite(enable_right_motor, HIGH);
+}
+
+void movement(int angle)
+{
+    if(distance > 0)
+    {
+        digitalWrite(forward_left_motor, HIGH);
+        digitalWrite(forward_right_motor, HIGH);
+        digitalWrite(backward_left_motor, LOW);
+        digitalWrite(backward_right_motor, LOW);
+    }
+    else if(distance < 0)
+    {
+        digitalWrite(forward_left_motor, HIGH);
+        digitalWrite(forward_right_motor, HIGH);
+        digitalWrite(backward_left_motor, LOW);
+        digitalWrite(backward_right_motor, LOW);
+    }
+    motor_start_time = millis();
+    motor_stop_time = abs((24*thetha)/(rpm*6*wheel_diameter))
+    motor_start_flag = 1;
+    digitalWrite(enable_left_motor, HIGH);
+    digitalWrite(enable_right_motor, HIGH);
+}
+
 void loop()
 {
-   if(Serial.available())
-   {
-      char data = Serial.read();
-      if (data == 'F')
-      {
-         digitalWrite(in_a1, HIGH);
-         digitalWrite(in_a2, LOW);
-         digitalWrite(in_b1, HIGH);
-         digitalWrite(in_b2, LOW);
-
-         digitalWrite(en_a, HIGH);
-         digitalWrite(en_b, HIGH);
-         delay(1000);
-
-         digitalWrite(in_a1, LOW);
-         digitalWrite(in_a2, HIGH);
-         digitalWrite(in_b1, LOW);
-         digitalWrite(in_b2, HIGH);
-
-         delay(inertia_time);
-         digitalWrite(en_a, LOW);
-         digitalWrite(en_b, LOW);
-      }
-      else if (data == 'B')
-      {
-         digitalWrite(in_a1, LOW);
-         digitalWrite(in_a2, HIGH);
-         digitalWrite(in_b1, LOW);
-         digitalWrite(in_b2, HIGH);
-
-         digitalWrite(en_a, HIGH);
-         digitalWrite(en_b, HIGH);
-         delay(1000);
-
-         digitalWrite(in_a1, HIGH);
-         digitalWrite(in_a2, LOW);
-         digitalWrite(in_b1, HIGH);
-         digitalWrite(in_b2, LOW);
-
-         delay(inertia_time);
-         digitalWrite(en_a, LOW);
-         digitalWrite(en_b, LOW);
-      }
-      else if (data == 'R')
-      {
-         digitalWrite(in_a1, HIGH);
-         digitalWrite(in_a2, LOW);
-         digitalWrite(in_b1, LOW);
-         digitalWrite(in_b2, HIGH);
-
-         digitalWrite(en_a, HIGH);
-         digitalWrite(en_b, HIGH);
-         delay(1000);
-
-         digitalWrite(in_a1, LOW);
-         digitalWrite(in_a2, HIGH);
-         digitalWrite(in_b1, HIGH);
-         digitalWrite(in_b2, LOW);
-
-         delay(inertia_time);
-         digitalWrite(en_a, LOW);
-         digitalWrite(en_b, LOW);
-      }
-      else if (data == 'L')
-      {
-         digitalWrite(in_a1, LOW);
-         digitalWrite(in_a2, HIGH);
-         digitalWrite(in_b1, HIGH);
-         digitalWrite(in_b2, LOW);
-
-         digitalWrite(en_a, HIGH);
-         digitalWrite(en_b, HIGH); 
-         delay(1000);
-
-         digitalWrite(in_a1, HIGH);
-         digitalWrite(in_a2, LOW);
-         digitalWrite(in_b1, LOW);
-         digitalWrite(in_b2, HIGH);
-
-         delay(inertia_time);
-         digitalWrite(en_a, LOW);
-         digitalWrite(en_b, LOW);
-      }
-   }
+    if (motor_start_flag)
+    {
+        if ((millis() - motor_start_time) > motor_stop_time)
+        {
+            digitalWrite(enable_left_motor, HIGH);
+            digitalWrite(enable_right_motor, HIGH);
+            motor_start_flag = 0;
+        }
+    }
+    movement(11);
+    rotate(90);
+    movement(20);
+    movement(-20);
+    rotate(-90);
 }
