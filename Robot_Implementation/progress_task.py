@@ -16,9 +16,6 @@ SOUTH_WEST = 2.5
 WEST = 3
 NORTH_WEST = 3.5
 
-position = None
-direction = None
-
 serial_communication = serial.Serial('/dev/ttyUSB0',9600)
 bot_position = -1
 bot_direction = NORTH
@@ -77,35 +74,10 @@ distance_to_sim = 1 #Enter the hardcoded distance
 
 def run_bot():
 
-    #get_block_colour()
-    
     get_sims()
-    move_to_node(5)
-    talk_to_arduino("P") #Pick Block
+    move_to_node(5,SOUTH)
     
-    '''
-    for ah in ah_list:
-        if(is_qah(ah)):
-            service(ah)
-            ah_list.remove(ah)
-            break
-
-    for ah in ah_list:
-        service(ah)
-    '''
-
-def get_block_colour():
-    move_to_node(4)
-    for _ in range(3):
-        turn(-45)
-        block_list.append(detect_colour())
-    turn(-45)
-    move_to_node(7)
-    for _ in range(3):
-        turn(45)
-        block_list.append(detect_colour())
-    turn(45)
-    move_to_node(0)
+    talk_to_arduino("P") #Pick Block
 
 def get_sims():
     global distance_to_sim
@@ -128,13 +100,12 @@ def get_sims():
 
 def move(direction, distance = 0):
 
-    global bot_direction,bot_position
+    global bot_position
 
-    turn_angle = min(abs(direction - bot_direction),abs(direction-bot_direction+4))*90
-    sign = -1 if bot_direction+2<direction else 1
-    turn(turn_angle*sign)
-    
-    position = immediate_node[bot_position][direction]
+    turn_angle = get_turn_angle(direction)
+    turn(turn_angle)
+
+    position = immediate_node[bot_position][direction] if bot_position>=0 else immediate_node[bot_position]
     print("Moving to node",position)
     talk_to_arduino("M",str(distance))
 
@@ -147,11 +118,11 @@ def turn(angle):
     #encoded_angle = ((angle+180)*8)//360
     talk_to_arduino("T",str(angle))
 
-def move_to_node(node):
+def move_to_node(node,direction=None):
     global bot_position, arena_map
 
     while bot_position != node:
-        if(bot_position<0):
+        if bot_position<0:
             move(arena_map[bot_position])
         else:
             for i in range(4):
@@ -159,17 +130,17 @@ def move_to_node(node):
                     move(i)
                     break
 
-def detect_colour():
-    pass
+    if(direction is not None):
+        turn_angle = get_turn_angle(direction)
+        turn(turn_angle)
 
-def is_qah(ah):
-    pass
+def get_turn_angle(direction):
+    global bot_direction
 
-def service(ah):
-    pass
+    turn_angle = min(abs(direction - bot_direction),abs(direction-bot_direction+4))*90
+    sign = -1 if bot_direction+2<direction else 1
+    return turn_angle*sign
 
-def get_sim_id():
-    return 0
 
 def talk_to_arduino(action, value=None):
     global serial_communication

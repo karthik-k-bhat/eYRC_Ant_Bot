@@ -1,17 +1,20 @@
 import numpy
 import cv2
+import cv2.aruco as aruco
+from aruco_lib import *
 import os
+aruco_id = None
 
-def color_det(path_to_image):
+def detect_color(path_to_image):
     color_dict={ "blue":[(175, 90, 50), (220, 130, 85)],
                  "green": [(0, 160, 35), (20, 200, 75)],
                  "red" : [(0, 0, 230), (18, 18, 255)]}
 
-    col_list=list();
+    col_list=list()
 
     img = cv2.imread(path_to_image)
     for i in color_dict.items():
-        #       1. Masking the image depending on the color - makes it binary color
+        #  1. Masking the image depending on the color - makes it binary color
         mask = cv2.inRange(img,i[1][0],i[1][1])
         #       2. Morphological operations on the image to refine the same
         kernel = numpy.ones((5,5),numpy.uint8)
@@ -31,9 +34,12 @@ def color_det(path_to_image):
     sorted_list = list(map(lambda x: x[1],col_list))
     print(sorted_list)
 
-if __name__ == "__main__": 
-    # Choose which image to open here. The image has to be in the same folder as the code
-    image_path = input()
-
-    color_det(image_path)
-
+def detect_sim_id(path_to_image):
+    global aruco_id
+    img = cv2.imread(path_to_image)     #give the name of the image with the complete path
+    det_aruco_list = {}
+    det_aruco_list = detect_Aruco(img)
+    #print(det_aruco_list)
+    if det_aruco_list:
+        aruco_id = list(det_aruco_list.keys())[0]
+        return aruco_id
