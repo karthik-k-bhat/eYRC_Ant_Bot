@@ -1,14 +1,14 @@
-#define Kp 10                         // experiment to determine this, start by something small that just makes your bot follow the line at a slow speed
-#define Kd 5                          // experiment to determine this, slowly increase the speeds and adjust this value. ( Note: Kp < Kd) 
+#define Kp 2                          // experiment to determine this, start by something small that just makes your bot follow the line at a slow speed
+#define Kd 8                          // experiment to determine this, slowly increase the speeds and adjust this value. ( Note: Kp < Kd) 
 
 #define left_line_sensor 5
 #define center_line_sensor 5
 #define right_line_sensor 5
 
-#define right_motor_max_pwm 250
-#define left_motor_max_pwm 250
-#define right_motor_base_pwm 200
-#define left_motor_base_pwm 200
+#define right_motor_max_pwm 255
+#define left_motor_max_pwm 255
+#define right_motor_base_pwm 210
+#define left_motor_base_pwm 210
 
 #define forward_right_motor 3
 #define backward_right_motor 4
