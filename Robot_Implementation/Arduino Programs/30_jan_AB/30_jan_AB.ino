@@ -57,6 +57,7 @@ long int led_on_time;
 
 bool pick_place_flag;                       // 0 - Pick Supply, 1 - Deliver supply
 bool camera_position;                       // 0 - Downwards, 1 - Upwards
+bool led_on_flag = 0;
 
 void setup()
 {
@@ -143,23 +144,34 @@ void loop()
      else if (data == 'R')
      {
         digitalWrite(red_led, HIGH);
+        digitalWrite(green_led, LOW);
+        digitalWrite(blue_led, LOW);
         led_on_time = millis();
+        led_on_flag = 1;
      }
      else if (data == 'G')
      {
+        digitalWrite(red_led, LOW);        
         digitalWrite(green_led, HIGH);
+        digitalWrite(blue_led, LOW);
         led_on_time = millis();
+        led_on_flag = 1;
      }
      else if (data == 'B')
      {
+        digitalWrite(red_led, LOW);
+        digitalWrite(green_led, LOW);
         digitalWrite(blue_led, HIGH);
         led_on_time = millis();
+        led_on_flag = 1;
      }
      else if (data == 'Y')
      {
         analogWrite(red_led, red_pwm);
         analogWrite(green_led, green_pwm);
+        digitalWrite(blue_led, LOW);
         led_on_time = millis();
+        led_on_flag = 1;
      }
      else if (data == 'C')
      {
@@ -176,11 +188,12 @@ void loop()
      }   
    }
 
-   if (millis() - led_on_time > 1000)
+   if (led_on_flag == 1 && (millis() - led_on_time > 1000))
    {
       digitalWrite(red_led, LOW);
       digitalWrite(green_led, LOW);
       digitalWrite(blue_led, LOW);
+      led_on_flag = 0;
    }
 }
 
