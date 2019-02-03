@@ -1,26 +1,22 @@
+'''
+* Team Id : 226
+* Author List : Vishwas, 
+* Filename: progress_task
+* Theme: Ant Bot
+* Functions: 
+* Global Variables: 
+'''
+
 import serial
 import detection
-from ant_hill import ah
 import time
-#from picamera import PiCamera 
-#from picamera.array import PiRGBArray
-
-#Globals
-
-NORTH = 0
-NORTH_EAST = 0.5
-EAST = 1
-SOUTH_EAST = 1.5
-SOUTH = 2
-SOUTH_WEST = 2.5
-WEST = 3
-NORTH_WEST = 3.5
+from picamera import PiCamera 
+from picamera.array import PiRGBArray
 
 serial_communication = serial.Serial('/dev/ttyUSB0',9600)
 bot_position = -1
-bot_direction = NORTH
+bot_direction = 0
 
-'''
 res = (608, 368)    # resolution for the frame
 
 camera = PiCamera()      # To initialize the PiCamera
@@ -28,10 +24,9 @@ camera.resolution = res  # set the resolution of the camera
 camera.rotation = 180    # to rotate the frames by 180 degrees
 camera.framerate = 16    # Set the frame rate
 rawCapture = PiRGBArray(camera, size=res)
-'''
 
 arena_map = {
-    -16: SOUTH,-15: WEST,-14: EAST,-13: WEST,-12: EAST,-11: WEST,-10: EAST,-9: WEST,-8: EAST,-7: NORTH,-6: NORTH,-5: NORTH,-4: NORTH,-3: NORTH,-2: NORTH,-1: NORTH,
+    -16: 2,-15: 3,-14: 1,-13: 3,-12: 1,-11: 3,-10: 1,-9: 3,-8: 1,-7: 0,-6: 0,-5: 0,-4: 0,-3: 0,-2: 0,-1: 0,
         0: [{-16,-15,-14,-13,-12,-11,-10,-9,-8,1,2,9,10,11,12,13,14},{-7,-6,-5,6,7,8},{-1},{-4,-3,-2,3,4,5}],
         1: [{-16,2},{-13,-12,-11,-10,12,13},{-7,-6,-5,-4,-3,-2,-1,0,3,4,5,6,7,8},{-15,-14,-9,-8,9,11,14}],
         2: [{-16},set(),{-15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,3,4,5,6,7,8,9,10,11,12,13,14},set()],
@@ -70,31 +65,31 @@ immediate_node = [
 
 ah_list = []
 block_list = []
-distance_to_sim = 1 #Enter the hardcoded distance
+distance_to_sim = 24 #Enter the hardcoded distance
 
 def run_bot():
 
     get_sims()
-    move_to_node(5,SOUTH)
+    move_to_node(5,2)
     
     talk_to_arduino("P") #Pick Block
 
 def get_sims():
-    global distance_to_sim
+    global distance_to_sim,camera,rawCapture
 
     move_to_node(1)
     for i in range(2):
         move(2*i,distance_to_sim)
         turn(-90)
-        #camera.capture("picture"+str(i*2)+".jpg")
-        #rawCapture.truncate(0)
-        #id = detection.detect_sim_id("./picture"+str(i*2)+".jpg")
-        #print(id)
+        camera.capture("picture"+str(i*2)+".jpg")
+        rawCapture.truncate(0)
+        id = detection.detect_sim_id("./picture"+str(i*2)+".jpg")
+        print("Got ID",i*2,id)
         turn(180)
-        #camera.capture("picture"+str(i*2+1)+".jpg")
-        #rawCapture.truncate(0)
-        #id = detection.detect_sim_id("./picture"+str(i*2+1)+".jpg")
-        #print(id)
+        camera.capture("picture"+str(i*2+1)+".jpg")
+        rawCapture.truncate(0)
+        id = detection.detect_sim_id("./picture"+str(i*2+1)+".jpg")
+        print("Got ID",i*2+1,id)
         turn(90)
         move((2*i+2)%4,distance_to_sim)
 

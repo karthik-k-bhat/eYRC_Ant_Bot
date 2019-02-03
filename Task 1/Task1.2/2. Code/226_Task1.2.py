@@ -136,6 +136,7 @@ def color_detect(img):
     if os.path.isfile("226_Task1.2.csv"):
         fo = open("226_Task1.2.csv", "a")
     else:
+        
         fo = open("226_Task1.2.csv", "w+")
         fo.write("Image Name," + "ArUco ID" + "," + "(x- y) Object-1" + "," + "(x- y) Object-2" + "\n")
 

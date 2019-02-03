@@ -43,3 +43,5 @@ def detect_sim_id(path_to_image):
     if det_aruco_list:
         aruco_id = list(det_aruco_list.keys())[0]
         return aruco_id
+        
+print("Hello",detect_sim_id("sim2b.png"))

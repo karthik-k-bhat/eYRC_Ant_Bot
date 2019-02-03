@@ -2,8 +2,8 @@ import serial
 import detection
 from ant_hill import ah
 import time
-#from picamera import PiCamera 
-#from picamera.array import PiRGBArray
+from picamera import PiCamera 
+from picamera.array import PiRGBArray
 
 #Globals
 
@@ -23,7 +23,6 @@ serial_communication = serial.Serial('/dev/ttyUSB0',9600)
 bot_position = -1
 bot_direction = NORTH
 
-'''
 res = (608, 368)    # resolution for the frame
 
 camera = PiCamera()      # To initialize the PiCamera
@@ -31,7 +30,7 @@ camera.resolution = res  # set the resolution of the camera
 camera.rotation = 180    # to rotate the frames by 180 degrees
 camera.framerate = 16    # Set the frame rate
 rawCapture = PiRGBArray(camera, size=res)
-'''
+
 
 arena_map = {
     -16: SOUTH,-15: WEST,-14: EAST,-13: WEST,-12: EAST,-11: WEST,-10: EAST,-9: WEST,-8: EAST,-7: NORTH,-6: NORTH,-5: NORTH,-4: NORTH,-3: NORTH,-2: NORTH,-1: NORTH,
