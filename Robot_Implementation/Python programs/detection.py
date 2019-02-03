@@ -76,12 +76,13 @@ def detect_color(path_to_image,angle):
 
 def detect_sim_id(path_to_image):
     global aruco_id
-    img = cv2.imread(path_to_image)     #give the name of the image with the complete path
+    img = cv2.imread(path_to_image) #give the name of the image with the complete path
     det_aruco_list = {}
     det_aruco_list = detect_Aruco(img)
     #print(det_aruco_list)
     if det_aruco_list:
         aruco_id = list(det_aruco_list.keys())[0]
         return aruco_id
-
-#detect_color("1.png",45)
+        
+for i in range(4):
+		print(i,detect_sim_id(str(i)+".png"))

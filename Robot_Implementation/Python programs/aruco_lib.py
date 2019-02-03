@@ -63,7 +63,7 @@ def detect_Aruco(img):  #returns the detected aruco list dictionary with id: cor
     aruco_list = {}
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_7X7_250)#aruco.Dictionary_get(aruco.DICT_4X4_50)   #creating aruco_dict with 5x5 bits with max 250 ids..so ids ranges from 0-249
-    print(aruco_dict)
+    #print(aruco_dict)
     parameters = aruco.DetectorParameters_create()  #refer opencv page for clarification
     #lists of ids and the corners beloning to each id
     #print(parameters)

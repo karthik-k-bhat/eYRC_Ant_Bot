@@ -3,28 +3,55 @@
 * Author List : Vishwas, 
 * Filename: progress_task
 * Theme: Ant Bot
-* Functions: 
-* Global Variables: 
+* Functions: run_bot, get_sims, move_to_node, move, turn, talk_to_arduino 
+* Global Variables: serial_communication, bot_position, bot_direction, 
+*                   resolution, camera, raw_capture, arena_map, immediate_node
+*                   ah_list, block_list 
 '''
 
+'''
+* Function Name:
+* Input:
+* Output:
+* Logic:
+*
+* Example Call:
+'''
+
+# Import packages
 import serial
 import detection
 import time
 from picamera import PiCamera 
 from picamera.array import PiRGBArray
 
+# Initialise serial communication between Arduino and Pi
 serial_communication = serial.Serial('/dev/ttyUSB0',9600)
+
+# Set initial position and direction of the bot
 bot_position = -1
 bot_direction = 0
 
-res = (608, 368)    # resolution for the frame
+# Setup the PiCamera
+resolution = (608, 368)         # resolution for the frame
+camera = PiCamera()             # To initialize the PiCamera
+camera.resolution = resolution  # set the resolution of the camera
+camera.rotation = 180           # to rotate the frames by 180 degrees
+camera.framerate = 16           # Set the frame rate
+raw_capture = PiRGBArray(camera, size=resolution)
 
-camera = PiCamera()      # To initialize the PiCamera
-camera.resolution = res  # set the resolution of the camera
-camera.rotation = 180    # to rotate the frames by 180 degrees
-camera.framerate = 16    # Set the frame rate
-rawCapture = PiRGBArray(camera, size=res)
-
+'''
+# arena_map : This is a representation of the complete eyantra arena. The nodes
+*             are numbered from 0 to 14 and the box pickup/service zones are numbered from -16 to -1.
+*             Numbering of the nodes are shown in "arena.png" file presen in the "Images" folder.
+*             
+*             This variable is a dictionary that contains a node number and a list of 4 sets
+*             as the key-value pair. Each of the 4 sets represent the directions in which other nodes
+*             are present in the order North, East, South and West. An empty set represents that the
+*             node does not have a path in that diresction.
+* 
+*             Note that 
+'''
 arena_map = {
     -16: 2,-15: 3,-14: 1,-13: 3,-12: 1,-11: 3,-10: 1,-9: 3,-8: 1,-7: 0,-6: 0,-5: 0,-4: 0,-3: 0,-2: 0,-1: 0,
         0: [{-16,-15,-14,-13,-12,-11,-10,-9,-8,1,2,9,10,11,12,13,14},{-7,-6,-5,6,7,8},{-1},{-4,-3,-2,3,4,5}],
@@ -65,33 +92,48 @@ immediate_node = [
 
 ah_list = []
 block_list = []
-distance_to_sim = 24 #Enter the hardcoded distance
 
 def run_bot():
 
     get_sims()
-    move_to_node(5,2)
+    #move_to_node(5,2)
     
-    talk_to_arduino("P") #Pick Block
+    #talk_to_arduino("P") #Pick Block
 
 def get_sims():
-    global distance_to_sim,camera,rawCapture
+    global camera,raw_capture
+    talk_to_arduino("O")
+    time.spleep(2)
+    talk_to_arduino("T45")
+    camera.capture("1.png")
+    
+    time.sleep(2)
+    talk_to_arduino("T80")
+    camera.capture("2.png")
+    time.sleep(2)
+    talk_to_arduino("T80")
+    camera.capture("3.png")
+    time.sleep(2)
+    talk_to_arduino("T90")
+    camera.capture("0.png")
+    time.sleep(2)
+    talk_to_arduino("T40")
 
-    move_to_node(1)
-    for i in range(2):
-        move(2*i,distance_to_sim)
-        turn(-90)
-        camera.capture("picture"+str(i*2)+".jpg")
-        rawCapture.truncate(0)
-        id = detection.detect_sim_id("./picture"+str(i*2)+".jpg")
-        print("Got ID",i*2,id)
-        turn(180)
-        camera.capture("picture"+str(i*2+1)+".jpg")
-        rawCapture.truncate(0)
-        id = detection.detect_sim_id("./picture"+str(i*2+1)+".jpg")
-        print("Got ID",i*2+1,id)
-        turn(90)
-        move((2*i+2)%4,distance_to_sim)
+def move_to_node(node,direction=None):
+    global bot_position, arena_map
+
+    while bot_position != node:
+        if bot_position<0:
+            move(arena_map[bot_position])
+        else:
+            for i in range(4):
+                if node in arena_map[bot_position][i]:
+                    move(i)
+                    break
+
+    if(direction is not None):
+        turn_angle = get_turn_angle(direction)
+        turn(turn_angle)
 
 def move(direction, distance = 0):
 
@@ -112,22 +154,6 @@ def turn(angle):
     print("Now facing",bot_direction)
     #encoded_angle = ((angle+180)*8)//360
     talk_to_arduino("T",str(angle))
-
-def move_to_node(node,direction=None):
-    global bot_position, arena_map
-
-    while bot_position != node:
-        if bot_position<0:
-            move(arena_map[bot_position])
-        else:
-            for i in range(4):
-                if node in arena_map[bot_position][i]:
-                    move(i)
-                    break
-
-    if(direction is not None):
-        turn_angle = get_turn_angle(direction)
-        turn(turn_angle)
 
 def get_turn_angle(direction):
     global bot_direction
