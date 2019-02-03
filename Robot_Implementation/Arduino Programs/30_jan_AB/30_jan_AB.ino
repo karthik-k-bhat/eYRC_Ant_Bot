@@ -1,24 +1,24 @@
 #include <Servo.h>
 
-#define Kp 4                           // experiment to determine this, start by something small that just makes your bot follow the line at a slow speed
-#define Kd 16                          // experiment to determine this, slowly increase the speeds and adjust this value. ( Note: Kp < Kd) 
+#define Kp 0.5                          // experiment to determine this, start by something small that just makes your bot follow the line at a slow speed
+#define Kd 1                            // experiment to determine this, slowly increase the speeds and adjust this value. ( Note: Kp < Kd) 
 
 #define left_line_sensor A0
-#define center_line_sensor A1
-#define right_line_sensor A2
+#define center_line_sensor A2
+#define right_line_sensor A4
 
 #define right_motor_max_pwm 255
 #define left_motor_max_pwm 255
-#define right_motor_base_pwm 210
-#define left_motor_base_pwm 210
+#define right_motor_base_pwm 188  
+#define left_motor_base_pwm 255
 
-#define forward_right_motor 7
+#define forward_left_motor 4
+#define backward_left_motor 6
+#define enable_left_motor 5
+
+#define forward_right_motor 2
 #define backward_right_motor 12
-#define enable_right_motor 2
-
-#define forward_left_motor 11
-#define backward_left_motor 12
-#define enable_left_motor 3
+#define enable_right_motor 3
 
 #define length_of_shaft 26.5
 #define motor_rpm 50
@@ -93,7 +93,7 @@ void setup()
    grabber_servo.write(0);
    pick_place_flag = 0;
 
-   camera_servo.write(30);
+   camera_servo.write(120);
    camera_position = 0;
    
    line_sensor_calibrate();
@@ -117,7 +117,13 @@ void loop()
         String i = Serial.readString();
         robot_movement_direction = i.toInt();
         set_robot_movement();
-        movement();
+        if (abs(get_bot_position()) > 2)
+        {
+           analogWrite(enable_left_motor, left_motor_base_pwm);
+           analogWrite(enable_right_motor, right_motor_base_pwm);
+           delay(50);
+        }
+        while(movement());
      }
      else if (data == 'T')
      {
@@ -177,12 +183,12 @@ void loop()
      {
         if (camera_position)
         {
-           camera_servo.write(30);
+           camera_servo.write(120);
            camera_position = 0;
         }
         else
         {
-           camera_servo.write(15);
+           camera_servo.write(70);
            camera_position = 1;
         }
      }   
@@ -197,12 +203,40 @@ void loop()
    }
 }
 
+/*
+int movement()
+{
+   int error = get_bot_position();
+   if (abs(error < 2))
+   {
+      analogWrite(enable_left_motor, left_motor_base_pwm);
+      analogWrite(enable_right_motor, right_motor_base_pwm);
+      return 1;
+   }
+   else
+   {
+      robot_movement_direction = 0;
+      set_robot_movement();
+      if (error == -2)
+         Serial.println("Left-branched Node");
+      else if (error == 2)
+         Serial.println("Right-branched Node");
+      else if (error == -3)
+         Serial.println("White Space");
+      else if (error == 3)
+         Serial.println("Node");   
+      return 0;
+   }
+}
+
+*/
+
 int movement()
 {
   int error = get_bot_position();
   int right_motor_pwm = 0;
   int left_motor_pwm = 0;
-  if (abs(error) < 2)
+  if (abs(error) < 2 || error == -3)
   {
      int motorSpeed = Kp * error + Kd * (error - lastError);
      lastError = error;
@@ -210,13 +244,11 @@ int movement()
      {
         right_motor_pwm = right_motor_base_pwm + motorSpeed;
         left_motor_pwm = left_motor_base_pwm - motorSpeed;
-        set_robot_movement();
      }
      else if (robot_movement_direction == -1)                     // -1 - Backward
      {
         right_motor_pwm = right_motor_base_pwm - motorSpeed;
         left_motor_pwm = left_motor_base_pwm + motorSpeed;
-        set_robot_movement();
      }
      
      if (right_motor_pwm > right_motor_max_pwm )
@@ -230,17 +262,27 @@ int movement()
 
      analogWrite(enable_left_motor, left_motor_pwm);
      analogWrite(enable_right_motor, right_motor_pwm);
+     return 1;
   }
   else
   {
     robot_movement_direction = 0;
     set_robot_movement();
-    Serial.print("Node");
+    if (error == -2)
+       Serial.println("Left-branched Node");
+    else if (error == 2)
+       Serial.println("Right-branched Node");
+    else if (error == -3)
+       Serial.println("White Space");
+    else if (error == 3)
+       Serial.println("Node");   
+    return 0;
   }
 }
 
 void line_sensor_calibrate()
 {
+  Serial.println("Calibrating Line Sensor");
   int left_white_value = 0, left_black_value = 0;
   int center_white_value = 0, center_black_value = 0;
   int right_white_value = 0, right_black_value = 0;
@@ -248,25 +290,43 @@ void line_sensor_calibrate()
   left_white_value = analogRead(left_line_sensor);
   center_white_value = analogRead(center_line_sensor);
   right_white_value = analogRead(right_line_sensor);
-
+  Serial.print("Left sensor white value ");
+  Serial.print(left_white_value);
+  Serial.print(", Center sensor white value ");
+  Serial.print(center_white_value);
+  Serial.print(", Right sensor white value ");
+  Serial.println( right_white_value);
   robot_movement_direction = 1;
   set_robot_movement();
   
-  digitalWrite(enable_right_motor, HIGH);
-  digitalWrite(enable_left_motor, HIGH);
+  analogWrite(enable_right_motor, right_motor_base_pwm);
+  analogWrite(enable_left_motor, left_motor_base_pwm);
   
   delay(80);                                         // 80 ms (for approx 1.5 cms)
   
   robot_movement_direction = 0;
   set_robot_movement();
+  delay(2000);                                      // Uncomment Later
   
   left_black_value = analogRead(left_line_sensor);
   center_black_value = analogRead(center_line_sensor);
   right_black_value = analogRead(right_line_sensor);
+  Serial.print("Left sensor black value ");
+  Serial.print(left_black_value);
+  Serial.print(", Center sensor black value ");
+  Serial.print(center_black_value);
+  Serial.print(", Right sensor black value ");
+  Serial.println( right_black_value);
 
-  left_sensor_threshold = ((left_black_value + left_white_value) / 2) - (left_white_value / 3);
-  center_sensor_threshold = ((center_black_value + center_white_value) / 2) - (center_white_value / 3);
-  right_sensor_threshold = ((right_black_value + right_white_value) / 2) - (right_white_value / 3);
+  left_sensor_threshold = ((left_black_value + left_white_value) / 2);// - (left_white_value / 3);
+  center_sensor_threshold = ((center_black_value + center_white_value) / 2);// - (center_white_value / 3);
+  right_sensor_threshold = ((right_black_value + right_white_value) / 2);// - (right_white_value / 3);
+  Serial.print("Left sensor threshold ");
+  Serial.print(left_sensor_threshold);
+  Serial.print(", Center sensor threshold ");
+  Serial.print(center_sensor_threshold);
+  Serial.print(", Right sensor threshold ");
+  Serial.println( right_sensor_threshold);
 }
 
 void set_robot_movement()
@@ -277,6 +337,7 @@ void set_robot_movement()
       digitalWrite(backward_right_motor, LOW);
       digitalWrite(forward_left_motor, HIGH);
       digitalWrite(backward_left_motor, LOW);
+      Serial.println("Direction Set: Forward");
    }
    else if (robot_movement_direction == -1)         // -1 -> Backward
    {
@@ -284,6 +345,7 @@ void set_robot_movement()
       digitalWrite(backward_right_motor, HIGH);
       digitalWrite(forward_left_motor, LOW);
       digitalWrite(backward_left_motor, HIGH);
+      Serial.println("Direction Set: Backward");
    }
    else if (robot_movement_direction == 2)          // 2 -> Clockwise (Right)
    {
@@ -294,6 +356,7 @@ void set_robot_movement()
 
       digitalWrite(enable_right_motor, HIGH);
       digitalWrite(enable_left_motor, HIGH);
+      Serial.println("Direction Set: Right");
    }
    else if (robot_movement_direction == -2)         // -2 -> Counter-clockwise (Left)
    {
@@ -304,6 +367,7 @@ void set_robot_movement()
 
       digitalWrite(enable_right_motor, HIGH);
       digitalWrite(enable_left_motor, HIGH);
+      Serial.println("Direction Set: Left");
    }
    else if (robot_movement_direction == 0)          // 0 -> Stop
    {
@@ -322,7 +386,11 @@ int get_bot_position()
   /*  Black Line: "Greater than/equal to" sensor_threshold
    *  White Line: "Lesser than/equal to" sensor_threshold
    */
-  
+  Serial.print(left_sensor_value);
+  Serial.print(" ");
+  Serial.print(center_sensor_value);
+  Serial.print(" ");
+  Serial.println(right_sensor_value);
   if (left_sensor_value <= left_sensor_threshold &&
       center_sensor_value <= center_sensor_threshold &&
       right_sensor_value >= right_sensor_threshold)
@@ -387,6 +455,13 @@ void pick_place()
     */
    if (pick_place_flag)             // Deliver the supply
    {
+      /*robot_movement_direction = -1;
+      set_robot_movement();
+      analogWrite(enable_right_motor, right_motor_base_pwm);
+      analogWrite(enable_left_motor, left_motor_base_pwm);
+      delay(80);
+      digitalWrite(enable_right_motor,LOW);
+      digitalWrite(enable_left_motor,LOW);*/
       lift_servo.write(28);
       delay(500);
       grabber_servo.write(0);
