@@ -9,7 +9,7 @@
 
 #define right_motor_max_pwm 255
 #define left_motor_max_pwm 255
-#define right_motor_base_pwm 188  
+#define right_motor_base_pwm 187 
 #define left_motor_base_pwm 255
 
 #define forward_left_motor 4
@@ -203,7 +203,18 @@ void loop()
            camera_servo.write(70);
            camera_position = 1;
         }
-     }   
+     } 
+     else if (data == 'O')
+     {
+        robot_movement_direction = 1;
+        set_robot_movement();
+        analogWrite(enable_left_motor, left_motor_base_pwm);
+        analogWrite(enable_right_motor, right_motor_base_pwm);
+        delay((10*30)/(50*3.142*wheel_diameter)*1000);
+        digitalWrite(enable_left_motor, LOW);
+        digitalWrite(enable_right_motor, LOW);
+        
+     }
    }
 
    if (led_on_flag == 1 && (millis() - led_on_time > 1000))
@@ -248,7 +259,7 @@ int movement()
   int error = get_bot_position();
   int right_motor_pwm = 0;
   int left_motor_pwm = 0;
-  if (abs(error) < 2)
+  if (abs(error) < 2 || error == -3)
   {
      int motorSpeed = Kp * error + Kd * (error - lastError);
      lastError = error;
