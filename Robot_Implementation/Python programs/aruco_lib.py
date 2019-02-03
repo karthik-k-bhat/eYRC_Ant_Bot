@@ -66,12 +66,12 @@ def detect_Aruco(img):  #returns the detected aruco list dictionary with id: cor
     print(aruco_dict)
     parameters = aruco.DetectorParameters_create()  #refer opencv page for clarification
     #lists of ids and the corners beloning to each id
-    print(parameters)
+    #print(parameters)
     corners, ids, _ = aruco.detectMarkers(gray, aruco_dict, parameters = parameters)
     #corners is the list of corners(numpy array) of the detected markers. For each marker, its four corners are returned in their original order (which is clockwise starting with top left). So, the first corner is the top left corner, followed by the top right, bottom right and bottom left.
     # print len(corners), corners, ids
-    print(corners)
-    print(len(corners))
+    #print(corners)
+    #print(len(corners))
     gray = aruco.drawDetectedMarkers(gray, corners,ids)
     # cv2.imshow('frame',gray)
     #print (type(corners[0]))
