@@ -82,8 +82,8 @@ def get_sims():
         writer = csv.writer(file)
         # Write the detected IDs
         for sim_number in range(4):
-            row = ['SIM '+str(sim_number), aruco_id_list[sim_number]]
-            writer.writerow()
+            row = ['SIM '+str(sim_number), str(aruco_id_list[sim_number])]
+            writer.writerow(row)
 
 
 '''
@@ -95,8 +95,18 @@ def get_sims():
 * Example Call: pick_block()
 '''
 def pick_block():
-    pass
+    
+    time.sleep(1)
+    # Move the bot forward by 10cm 
+    talk_to_arduino("O")
+    time.sleep(1)
 
+    #Pick the box and place it back
+    talk_to_arduino("P") # 'P' alternates between pick and place.
+    time.sleep(1)
+
+    talk_to_arduino("P")
+    
 '''
 * Function Name: talk_to_arduino
 * Input: action -> String that denotes the action that has to be performed by the bot.
