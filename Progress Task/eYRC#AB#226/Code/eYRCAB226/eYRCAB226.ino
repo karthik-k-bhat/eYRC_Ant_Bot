@@ -1,12 +1,12 @@
 /*
- * Team ID: 226
- * Authors: Karthik K Bhat, Shreyas R
- * File Name: eYRCAB226.ino
- * Theme: Antbot
- * Functions: setup, loop, movement, line_sensor_calibrate, set_robot_movement,
- *            get_bot_position, pick_place
- * Global variables: left_sensor_threshold, center_sensor_threshold, right_sensor_threshold,
- *                   robot_movement_direction,lastError, pick_place_flag, camera_position
+ * Team ID          : 226
+ * Authors          : Karthik K Bhat, Shreyas R
+ * File Name        : eYRCAB226.ino
+ * Theme            : Antbot
+ * Functions        : setup, loop, movement, line_sensor_calibrate, set_robot_movement,
+ *                    get_bot_position, pick_place
+ * Global variables : left_sensor_threshold, center_sensor_threshold, right_sensor_threshold,
+ *                    robot_movement_direction, lastError, pick_place_flag, camera_position
  */
 
 #include <Servo.h>
@@ -233,14 +233,14 @@ void loop()
 }
 
 /* 
- *  Function Name: Movement
- *  Input: None
- *  Output: bool value - 0 robot being a node, 1 robot being on the line
- *  Logic: 1. To check the robot position using line sensor
- *         2. calculate the error for PID Algorithm and set the motor speeds
- *         3. Run the motors at calculated speeds
- *         4. If a node is identified, return 0, else return 1
- *  Example Call: movement()
+ *  Function Name : Movement
+ *  Input         : None
+ *  Output        : bool value - 0 robot being a node, 1 robot being on the line
+ *  Logic         : 1. To check the robot position using line sensor
+ *                  2. calculate the error for PID Algorithm and set the motor speeds
+ *                  3. Run the motors at calculated speeds
+ *                  4. If a node is identified, return 0, else return 1
+ *  Example Call  : movement()
  */
 int movement()
 {
@@ -297,15 +297,15 @@ int movement()
 }
 
 /* 
- *  Function Name: line_sensor_calibrate
- *  Input: None
- *  Output: None
- *  Logic: 1. Keep robot on the white area before the start node.   
- *         2. Read the line sensor value for white area
- *         3. Move the robot to the node (for 1.5 cms)
- *         4. Read the line sensor value for black.
- *         5. Find the threshold for each sensor by taking the average of white and black value
- *  Example Call: line_sensor_calibrate()
+ *  Function Name : line_sensor_calibrate
+ *  Input         : None
+ *  Output        : None
+ *  Logic         : 1. Keep robot on the white area before the start node.   
+ *                  2. Read the line sensor value for white area
+ *                  3. Move the robot to the node (for 1.5 cms)
+ *                  4. Read the line sensor value for black.
+ *                  5. Find the threshold for each sensor by taking the average of white and black value
+ *  Example Call  : line_sensor_calibrate()
  */
 void line_sensor_calibrate()
 {
@@ -362,22 +362,22 @@ void line_sensor_calibrate()
 }
 
 /* 
- *  Function Name: set_robot_movement
- *  Input: None
- *  Output: None
- *  Logic: 1. Set the directions for movement according the robot_movement_direction
- *            -2  Left direction
- *            -1  Backward
- *             0  Stop
- *             +1  Forward
- *             +2  Right direction
- *         2. For forward directon, motor forward pin to be HIGH and backward pin to be LOW
- *         3. For backward directon, motor forward pin to be LOW and backward pin to be HIGH
- *         4. For right directon, Left motor to go forward and right motor to go backward        
- *         5. For left directon, Left motor to go backward and right motor to go forward         
- *         6. To start the motor, make the enable pins high, or use analog write to run at different speeds using pwm.
- *         7. To stop the robot, make the enable pins low.
- *  Example Call: set_robot_movement()
+ *  Function Name : set_robot_movement
+ *  Input         : None
+ *  Output        : None
+ *  Logic         : 1. Set the directions for movement according the robot_movement_direction
+ *                            -2  Left direction
+ *                            -1  Backward
+ *                             0  Stop
+ *                            +1  Forward
+ *                            +2  Right direction
+ *                  2. For forward directon, motor forward pin to be HIGH and backward pin to be LOW
+ *                  3. For backward directon, motor forward pin to be LOW and backward pin to be HIGH
+ *                  4. For right directon, Left motor to go forward and right motor to go backward        
+ *                  5. For left directon, Left motor to go backward and right motor to go forward         
+ *                  6. To start the motor, make the enable pins high, or use analog write to run at different speeds using pwm.
+ *                  7. To stop the robot, make the enable pins low.
+ *  Example Call  : set_robot_movement()
  */
 void set_robot_movement()
 {
@@ -427,21 +427,21 @@ void set_robot_movement()
 }
 
 /* 
- *  Function Name: get_bot_position
- *  Input: None
- *  Output: Integer to represent the robot position
- *          For robot orientation with respect to line
- *          -3  White space
- *          -2  Left Branched Node
- *          -1  Bot left of line
- *           0  
- *          +1  Bot right of line
- *          +2  Right Branched Node
- *          +3  T-Node
+ *  Function Name : get_bot_position
+ *  Input         : None
+ *  Output        : Integer to represent the robot position
+ *                  For robot orientation with respect to line
+ *                        -3  White space
+ *                        -2  Left Branched Node
+ *                        -1  Bot left of line
+ *                         0  
+ *                        +1  Bot right of line
+ *                        +2  Right Branched Node
+ *                        +3  T-Node
  *  
- *  Logic: 1. Read the sensor values  
- *         2. Compare the values with the threshold values to get the position accordingly
- *  Example Call: get_bot_position()
+ *  Logic         : 1. Read the sensor values  
+ *                  2. Compare the values with the threshold values to get the position accordingly
+ *  Example Call  : get_bot_position()
  */
 
 int get_bot_position()
@@ -545,17 +545,17 @@ int get_bot_position()
 }
 
 /* 
- *  Function Name: pick_place
- *  Input: None
- *  Output: None
- *  Logic: Set the angle to the required servo as required 
- *  Example Call: movement()
+ *  Function Name : pick_place
+ *  Input         : None
+ *  Output        : None
+ *  Logic         : Set the angle to the required servo as required 
+ *  Example Call  : movement()
  */
 
 void pick_place()
 {
-   /*  Lift servo: 0 -> Up, 28 -> Down
-    *  Grab servo: 0 -> Open, 180 -> Close
+   /*  Lift servo : 0 -> Up, 28 -> Down
+    *  Grab servo : 0 -> Open, 180 -> Close
     */
    if (pick_place_flag)             // Deliver the supply
    {
