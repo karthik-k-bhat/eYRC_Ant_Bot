@@ -22,7 +22,6 @@ serial_communication = serial.Serial('/dev/ttyUSB0',9600)
 resolution = (608, 368)         # resolution for the frame
 camera = PiCamera()             # To initialize the PiCamera
 camera.resolution = resolution  # set the resolution of the camera
-camera.rotation = 180           # to rotate the frames by 180 degrees
 camera.framerate = 16           # Set the frame rate
 raw_capture = PiRGBArray(camera, size=resolution)
 
@@ -50,7 +49,11 @@ def get_sims():
     time.sleep(5)
     talk_to_arduino("O")    # 'O' makes the bot move a hard-coded distance of 10cm.
     time.sleep(3)
-
+    
+    #Open the pick/place mechanism and set the PiCamera to the right angle
+		talk_to_arduino("C")
+		time.sleep(1)
+		
     #Turn towards each sim and capture the images.
     talk_to_arduino("T45")  # 'TX' makes the robot turn by X degress
     time.sleep(2)
