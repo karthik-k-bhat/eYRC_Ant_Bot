@@ -50,9 +50,9 @@ def get_sims():
     talk_to_arduino("O")    # 'O' makes the bot move a hard-coded distance of 10cm.
     time.sleep(3)
     
-    #Open the pick/place mechanism and set the PiCamera to the right angle
-		talk_to_arduino("C")
-		time.sleep(1)
+    # Point PiCamera downward
+	talk_to_arduino("C")
+	time.sleep(1)
 		
     #Turn towards each sim and capture the images.
     talk_to_arduino("T45")  # 'TX' makes the robot turn by X degress
