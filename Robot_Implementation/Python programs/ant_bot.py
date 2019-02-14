@@ -1,12 +1,14 @@
+#Last edited: 14/2/19
 import serial
 import detection
-from ant_hill import ah
+from ant_hill import ant_hill
 import time
-from picamera import PiCamera 
+from picamera import PiCamera
 from picamera.array import PiRGBArray
 
-#Globals
+# Initialising Globals
 
+# Directions
 NORTH = 0
 NORTH_EAST = 0.5
 EAST = 1
@@ -16,22 +18,14 @@ SOUTH_WEST = 2.5
 WEST = 3
 NORTH_WEST = 3.5
 
-position = None
-direction = None
-
+# Bot
 serial_communication = serial.Serial('/dev/ttyUSB0',9600)
 bot_position = -1
 bot_direction = NORTH
+ant_hill_list = []
+block_list = []
 
-res = (608, 368)    # resolution for the frame
-
-camera = PiCamera()      # To initialize the PiCamera
-camera.resolution = res  # set the resolution of the camera
-camera.rotation = 180    # to rotate the frames by 180 degrees
-camera.framerate = 16    # Set the frame rate
-rawCapture = PiRGBArray(camera, size=res)
-
-
+# Map
 arena_map = {
     -16: SOUTH,-15: WEST,-14: EAST,-13: WEST,-12: EAST,-11: WEST,-10: EAST,-9: WEST,-8: EAST,-7: NORTH,-6: NORTH,-5: NORTH,-4: NORTH,-3: NORTH,-2: NORTH,-1: NORTH,
         0: [{-16,-15,-14,-13,-12,-11,-10,-9,-8,1,2,9,10,11,12,13,14},{-7,-6,-5,6,7,8},{-1},{-4,-3,-2,3,4,5}],
@@ -70,83 +64,84 @@ immediate_node = [
     [9,-15,None,-14],
 ]
 
-ah_list = []
-block_list = []
-distance_to_sim = 1 #Enter the hardcoded distance
+# Camera
+resolution = (608, 368)                   # resolution for the frame
+camera = PiCamera()                       # To initialize the PiCamera
+camera.resolution = resolution            # set the resolution of the camera
+camera.framerate = 16                     # Set the frame rate
+rawCapture = PiRGBArray(camera, size=res) 
 
 def run_bot():
 
-    #get_block_colour()
-    
+    talk_to_arduino("I")
+
+    get_block_colours()
     get_sims()
-    move_to_node(5)
-    talk_to_arduino("P") #Pick Block
-    
-    '''
-    for ah in ah_list:
-        if(is_qah(ah)):
-            service(ah)
-            ah_list.remove(ah)
+
+    for ant_hill in ant_hill_list:
+        if(is_queen_ant_hill(ant_hill)):
+            service(ant_hill)
+            ant_hill_list.remove(ant_hill)
             break
 
-    for ah in ah_list:
-        service(ah)
-    '''
+    for ant_hill in ant_hill_list:
+        service(ant_hill)
 
-def get_block_colour():
-    move_to_node(4)
+def get_block_colours():
+    
+    global block_list,camera,rawCapture
+
+    move_to_node(4,WEST)
     for _ in range(3):
         turn(-45)
-        block_list.append(detect_colour())
+        camera.capture("Block"+str(i+1)+".jpg")
+        rawCapture.truncate(0)
+        colour = detection.detect_color("Block"+str(i+1)+".jpg",45)
+        block_list.append(colour)
     turn(-45)
-    move_to_node(7)
+
+    move_to_node(7,EAST)
     for _ in range(3):
         turn(45)
-        block_list.append(detect_colour())
+        camera.capture("Block"+str(i+4)+".jpg")
+        rawCapture.truncate(0)
+        colour = detection.detect_color("Block"+str(i+4)+".jpg",45)
+        block_list.append(colour)
     turn(45)
-    move_to_node(0)
 
 def get_sims():
-    global distance_to_sim
+    
+    global ant_hill_list,camera,rawCapture
 
-    move_to_node(1)
-    for i in range(2):
-        move(2*i,distance_to_sim)
-        turn(-90)
-        #camera.capture("picture"+str(i*2)+".jpg")
-        #rawCapture.truncate(0)
-        #id = detection.detect_sim_id("./picture"+str(i*2)+".jpg")
-        #print(id)
-        turn(180)
-        #camera.capture("picture"+str(i*2+1)+".jpg")
-        #rawCapture.truncate(0)
-        #id = detection.detect_sim_id("./picture"+str(i*2+1)+".jpg")
-        #print(id)
+    move_to_node(1,NORTH)
+    turn(-45)
+    for i in range(4):
+        camera.capture("Sim"+str(i)+".jpg")
+        rawCapture.truncate(0)
+        id = detection.detect_sim_id("./Sim"+str(i*2)+".jpg")
+        ant_hill = id_to_ant_hill(id)
+        ant_hill_list = 
         turn(90)
-        move((2*i+2)%4,distance_to_sim)
+
+    turn(45)
 
 def move(direction, distance = 0):
 
     global bot_direction,bot_position
 
-    turn_angle = min(abs(direction - bot_direction),abs(direction-bot_direction+4))*90
-    sign = -1 if bot_direction+2<direction else 1
-    turn(turn_angle*sign)
+    turn_angle = get_turn_angle(direction)
+    turn(turn_angle)
     
     position = immediate_node[bot_position][direction]
-    print("Moving to node",position)
     talk_to_arduino("M",str(distance))
 
 def turn(angle):
     global bot_direction
 
     bot_direction = (bot_direction + angle/90)%4
-    print("Turning",angle,"degrees")
-    print("Now facing",bot_direction)
-    #encoded_angle = ((angle+180)*8)//360
     talk_to_arduino("T",str(angle))
 
-def move_to_node(node):
+def move_to_node(node,direction = None):
     global bot_position, arena_map
 
     while bot_position != node:
@@ -157,33 +152,44 @@ def move_to_node(node):
                 if node in arena_map[bot_position][i]:
                     move(i)
                     break
+    
+    if(direction is not None):
+        turn_angle = get_turn_angle(direction)
+        turn(turn_angle)
 
-def detect_colour():
+def get_turn_angle(direction):
+    global bot_direction
+
+    turn_angle = min(abs(direction - bot_direction),abs(direction-bot_direction+4))*90
+    sign = -1 if bot_direction+2<direction else 1
+    return turn_angle*sign
+
+def is_qant_hill(ant_hill):
     pass
 
-def is_qah(ah):
+def service(ant_hill):
     pass
 
-def service(ah):
+def id_to_ant_hill(id):
     pass
-
-def get_sim_id():
-    return 0
 
 def talk_to_arduino(action, value=None):
     global serial_communication
 
-    while(1):
-        if(serial_communication.in_waiting>0):
-            response = serial_communication.readline()
-        if response == "1":
-            break
-        time.sleep(1)
-    
     serial_communication.write(action.encode())
     
     if(value is not None):
         serial_communication.write(value.encode())
+
+    while(1):
+        if(serial_communication.in_waiting>0):
+            response = serial_communication.readline().decode().strip("\n").strip("\r")
+        if response == "1":
+            print("Job Done")
+            break
+        else:
+            print(response)
+        time.sleep(1)
 
 if __name__ == "__main__":
     run_bot()

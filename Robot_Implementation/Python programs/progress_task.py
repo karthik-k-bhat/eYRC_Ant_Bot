@@ -20,10 +20,10 @@
 
 # Import packages
 import serial
-import detection
+#import detection
 import time
-from picamera import PiCamera 
-from picamera.array import PiRGBArray
+#from picamera import PiCamera 
+#from picamera.array import PiRGBArray
 
 # Initialise serial communication between Arduino and Pi
 serial_communication = serial.Serial('/dev/ttyUSB0',9600)

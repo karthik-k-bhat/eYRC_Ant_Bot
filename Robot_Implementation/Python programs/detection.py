@@ -40,7 +40,7 @@ def detect_color(path_to_image,angle):  # color detection function
             return "BLUE"
     if(ind.count(1)>1):     #if one color found two or more times , print that color
             print("GREEN")
-            print "GREEN"
+            return "GREEN"
     if(ind.count(2)>1):
             print("RED")
             return "RED"
