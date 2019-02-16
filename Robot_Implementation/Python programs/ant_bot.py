@@ -1,4 +1,7 @@
-#Last edited: 14/2/19
+#Last edited: 16 Feb 2019
+#Edited By: Vishwas N S
+#Last edit details: 
+
 import serial
 import detection
 from ant_hill import ant_hill
@@ -72,8 +75,6 @@ camera.framerate = 16                     # Set the frame rate
 rawCapture = PiRGBArray(camera, size=res) 
 
 def run_bot():
-
-    talk_to_arduino("I")
 
     get_block_colours()
     get_sims()
@@ -176,11 +177,6 @@ def id_to_ant_hill(id):
 def talk_to_arduino(action, value=None):
     global serial_communication
 
-    serial_communication.write(action.encode())
-    
-    if(value is not None):
-        serial_communication.write(value.encode())
-
     while(1):
         if(serial_communication.in_waiting>0):
             response = serial_communication.readline().decode().strip("\n").strip("\r")
@@ -190,6 +186,11 @@ def talk_to_arduino(action, value=None):
         else:
             print(response)
         time.sleep(1)
+
+    serial_communication.write(action.encode())
+    
+    if(value is not None):
+        serial_communication.write(value.encode())
 
 if __name__ == "__main__":
     run_bot()

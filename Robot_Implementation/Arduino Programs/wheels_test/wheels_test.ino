@@ -1,12 +1,16 @@
-#define enable_left_motor 
-#define enable_right_motor 
-#define forward_left_motor 
-#define backward_left_motor 
-#define forward_right_motor 
-#define backward_right_motor 
-#define rpm 50
-#define length_of_shaft
-#define wheel_diameter
+// Pin numbers for Motor control with L298D
+#define forward_left_motor 4
+#define backward_left_motor 6
+#define enable_left_motor 5
+ 
+#define forward_right_motor 12
+#define backward_right_motor 2
+#define enable_right_motor 3
+
+// Parameters of the robot for movements
+#define length_of_shaft 26.5
+#define motor_rpm 100
+#define wheel_diameter 6.8
 
 void setup()
 {
@@ -16,6 +20,16 @@ void setup()
     pinMode(backward_left_motor, OUTPUT);
     pinMode(forward_right_motor, OUTPUT);
     pinMode(backward_right_motor, OUTPUT);
+
+    movement(20);
+    delay(1000);
+    rotate(90);
+    delay(1000);
+    movement(-20);
+    delay(1000);
+    rotate(-90);
+    delay(1000);
+
 }
 
 void movement(int distance)
@@ -29,55 +43,49 @@ void movement(int distance)
     }
     else if(distance < 0)
     {
-        digitalWrite(forward_left_motor, HIGH);
-        digitalWrite(forward_right_motor, HIGH);
-        digitalWrite(backward_left_motor, LOW);
-        digitalWrite(backward_right_motor, LOW);
+        digitalWrite(forward_left_motor, LOW);
+        digitalWrite(forward_right_motor, LOW);
+        digitalWrite(backward_left_motor, HIGH);
+        digitalWrite(backward_right_motor, HIGH);
     }
-    motor_start_time = millis();
-    motor_stop_time = abs(distance*60)/(rpm*3.142*wheel_diameter)
-    motor_start_flag = 1;
+    
+    int motor_run_time = (abs(distance)*60)/(motor_rpm*3.142*wheel_diameter)*1000;
+    
     digitalWrite(enable_left_motor, HIGH);
     digitalWrite(enable_right_motor, HIGH);
+    delay(motor_run_time);
+    digitalWrite(enable_left_motor, LOW);
+    digitalWrite(enable_right_motor, LOW);
+    
 }
 
-void movement(int angle)
+void rotate(int angle)
 {
-    if(distance > 0)
+    if(angle > 0)
     {
         digitalWrite(forward_left_motor, HIGH);
-        digitalWrite(forward_right_motor, HIGH);
+        digitalWrite(forward_right_motor, LOW);
         digitalWrite(backward_left_motor, LOW);
-        digitalWrite(backward_right_motor, LOW);
+        digitalWrite(backward_right_motor, HIGH);
     }
-    else if(distance < 0)
+    else if(angle < 0)
     {
-        digitalWrite(forward_left_motor, HIGH);
+        digitalWrite(forward_left_motor, LOW);
         digitalWrite(forward_right_motor, HIGH);
-        digitalWrite(backward_left_motor, LOW);
+        digitalWrite(backward_left_motor, HIGH);
         digitalWrite(backward_right_motor, LOW);
     }
-    motor_start_time = millis();
-    motor_stop_time = abs((24*thetha)/(rpm*6*wheel_diameter))
-    motor_start_flag = 1;
+    
+    int motor_run_time = (length_of_shaft*abs(angle))/(motor_rpm*6*wheel_diameter)*1000;
+    
     digitalWrite(enable_left_motor, HIGH);
     digitalWrite(enable_right_motor, HIGH);
+    delay(motor_run_time);
+    digitalWrite(enable_left_motor, LOW);
+    digitalWrite(enable_right_motor, LOW);
+
 }
 
 void loop()
 {
-    if (motor_start_flag)
-    {
-        if ((millis() - motor_start_time) > motor_stop_time)
-        {
-            digitalWrite(enable_left_motor, HIGH);
-            digitalWrite(enable_right_motor, HIGH);
-            motor_start_flag = 0;
-        }
-    }
-    movement(11);
-    rotate(90);
-    movement(20);
-    movement(-20);
-    rotate(-90);
 }
