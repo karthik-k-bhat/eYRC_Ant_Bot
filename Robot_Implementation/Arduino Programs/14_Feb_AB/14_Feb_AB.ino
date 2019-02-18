@@ -45,7 +45,7 @@
 
 // Pin numbers for Motor control with L298D
 #define forward_left_motor 4
-#define backward_left_motor 6
+#define backward_left_motor 7
 #define enable_left_motor 5
 
 #define forward_right_motor 12
