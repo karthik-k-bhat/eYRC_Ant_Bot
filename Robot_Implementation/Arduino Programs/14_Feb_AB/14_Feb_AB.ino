@@ -5,24 +5,20 @@
  * 2. Changed the line follow logic
  * 3. Added ineria cancel logic.
  * 
- * Further Modifications:
- * 1. Place Mechanism with robot movements
  *
  * To-Do
- * 1. Check and comment inertia cancel logic.
+ * 1. Check why Left motor is not going backward
  * 2. Add PID to line following to make it smooth
- * 
+ * 3. Place Mechanism with robot movements 
  */
 
 /*
  * Team ID          : 226
- * Authors          : Karthik K Bhat, Shreyas R
+ * Authors          : Karthik K Bhat, Vishwas N S, Shreyas R
  * File Name        : eYRCAB226.ino
  * Theme            : Antbot
- * Functions        : setup, loop, movement, line_sensor_calibrate, set_robot_movement,
- *                    get_bot_position, pick_place
- * Global variables : left_sensor_threshold, center_sensor_threshold, right_sensor_threshold,
- *                    robot_movement_direction, lastError, pick_place_flag, camera_position
+ * Functions        : 
+ * Global variables : 
  */
 
 // Include the required Library Files
@@ -37,11 +33,11 @@
 #define center_line_sensor A2
 #define right_line_sensor A4
 
-// Motor parameter to control with PID algorithm
-#define right_motor_max_pwm 255
-#define left_motor_max_pwm 255
+// Motor parameter to control the speeds
 #define right_motor_base_pwm 255                  // Base pwm - Such that the robot goes in a straight line   
 #define left_motor_base_pwm 255
+#define motor_speed_variation 50
+#define motor_low_speed_value 150
 
 // Pin numbers for Motor control with L298D
 #define forward_left_motor 4
@@ -92,13 +88,12 @@ int robot_movement_direction = 0;
  *  +2  Right Branched Node
  *  +3  T or + Node
  */
-int lastError = 0;
-int bot_position;
+int bot_position;                           // To identify the last known position of the bot
 
 bool pick_place_flag;                       // 0 - Pick Supply, 1 - Deliver supply
 bool camera_position;                       // 0 - Downwards, 1 - Upwards
-bool led_on_flag = 0;
-bool job_done_flag = 0;
+bool job_done_flag = 0;                     // Flag to denote if a job was completed or not
+bool white_space_stop = 0;                  // Flag to stop the bot if white space was detected by the line sensor
 
 // Default arduino setup function - to run the code initially one time
 void setup()
@@ -154,6 +149,7 @@ void loop()
     *  4. Pick and Place mechanism: 'P'
     *  5. Camera servo: 'C'
     *  6. Move a certain distance: 'O' followed by the distance. Positive is front, Negative is back 
+    *  7. Stop when white space is detected: 'W'
     */
    if (Serial.available())
    {
@@ -268,7 +264,13 @@ void loop()
         //digitalWrite(enable_right_motor, LOW);
         cancel_inertia();
      }
+     else if (data == 'W')
+     {
+        // Stop the bot when white space is found. Set the flag
+        white_space_stop = 1;
+     }
 
+     // Set the job done flag.
      job_done_flag = 1;
    }
    
@@ -276,6 +278,7 @@ void loop()
   if(job_done_flag)
   {
     Serial.print("Job done");
+    // Clear the flag and wait for next command
     job_done_flag = 0;  
   }
    
@@ -286,46 +289,19 @@ void loop()
  *  Input         : None
  *  Output        : bool value - 0 robot being a node, 1 robot being on the line
  *  Logic         : 1. To check the robot position using line sensor
- *                  2. calculate the error for PID Algorithm and set the motor speeds
- *                  3. Run the motors at calculated speeds
- *                  4. If a node is identified, return 0, else return 1
+ *                  2. Change the speeds of the motors at different speed if bot is found not on line
+ *                  3. Run motor at base speed if bot is found going on line
+ *                  4. Stop the bot at node or when white_space_stop is requested
+ *                  5. If a node/white space(with white_space_stop flag set) is identified, return 0, else return 1
  *  Example Call  : movement()
  */
- 
-/*
-int movement_without_pwm()
-{
-   int error = get_bot_position();
-   if (abs(error < 2))
-   {
-      analogWrite(enable_left_motor, left_motor_base_pwm);
-      analogWrite(enable_right_motor, right_motor_base_pwm);
-      return 1;
-   }
-   else
-   {
-      robot_movement_direction = 0;
-      set_robot_movement();
-      if (error == -2)
-         Serial.println("Left-branched Node");
-      else if (error == 2)
-         Serial.println("Right-branched Node");
-      else if (error == -3)
-         Serial.println("White Space");
-      else if (error == 3)
-         Serial.println("Node");   
-      return 0;
-   }
-}
-
-*/
-
-int movement()
+ int movement()
 {
   int error = get_bot_position();
   int right_motor_pwm = right_motor_base_pwm;
   int left_motor_pwm = left_motor_base_pwm;
-  if(abs(error) == 2 || error == 3)
+  
+  if((abs(error) == 2 || error == 3) || (error == -3 && white_space_stop))
   {
      // Stop the robot
      robot_movement_direction = 0;
@@ -336,51 +312,29 @@ int movement()
         Serial.println("Left-branched Node");
      else if (error == 2)
         Serial.println("Right-branched Node");
-      else if (error == 3)
-        Serial.println("T-branched Node");
+     else if (error == 3)
+        Serial.println("T-branched Space Node");
+     else if (error == -3)
+     {
+        Serial.println("White Space");
+        // Clear the white_space_stop flag once white space is detected
+        white_space_stop = 0;
+     }
      return 0;
   }
   else
   {
-     if(error == 3 && bot_position == -1)
-     {
-        right_motor_pwm -= 50;
-     }
-     else if(error == 3 && bot_position == 1)
-     {
-        left_motor_pwm -= 50;
-     }
-   /*
-     int motorSpeed = Kp * error + Kd * (error - lastError);
-     lastError = error;
-     if (robot_movement_direction == 1)                           // 1 - Forward
-     {
-        // Calculate the motor driving speed
-        right_motor_pwm = right_motor_base_pwm + motorSpeed;
-        left_motor_pwm = left_motor_base_pwm - motorSpeed;
-     }
-     else if (robot_movement_direction == -1)                     // -1 - Backward
-     {
-        // Calculate the motor driving speed
-        right_motor_pwm = right_motor_base_pwm - motorSpeed;
-        left_motor_pwm = left_motor_base_pwm + motorSpeed;
-     }
-     
-     if (right_motor_pwm > right_motor_max_pwm )
-        right_motor_pwm = right_motor_max_pwm;                    // prevent the motor from going beyond max speed
-     if (left_motor_pwm > left_motor_max_pwm )
-        left_motor_pwm = left_motor_max_pwm;
-     if (right_motor_pwm < 0)
-        right_motor_pwm = 0;                                      // keep the motor speed positive
-     if (left_motor_pwm < 0)
-        left_motor_pwm = 0;
-      */
+     if(error == -3 && bot_position == -1)                        // Turn Left
+        right_motor_pwm -= motor_speed_variation;
+        
+     else if(error == -3 && bot_position == 1)                    // Turn Right
+        left_motor_pwm -= motor_speed_variation;
 
+     // Run the motor at set speeds
      analogWrite(enable_left_motor, left_motor_pwm);
      analogWrite(enable_right_motor, right_motor_pwm);
      return 1;
   }
-  
 }
 
 /* 
@@ -389,7 +343,7 @@ int movement()
  *  Output        : None
  *  Logic         : 1. Keep robot on the white area before the start node.   
  *                  2. Read the line sensor value for white area
- *                  3. Move the robot to the node (for 1.5 cms)
+ *                  3. Move the robot until a large jump in the values is observed
  *                  4. Read the line sensor value for black.
  *                  5. Find the threshold for each sensor by taking the average of white and black value
  *  Example Call  : line_sensor_calibrate()
@@ -418,20 +372,23 @@ void line_sensor_calibrate()
    robot_movement_direction = 1;
    set_robot_movement();
    
-   analogWrite(enable_right_motor, 100);
-   analogWrite(enable_left_motor, 100);
+   analogWrite(enable_right_motor, motor_low_speed_value);
+   analogWrite(enable_left_motor, motor_low_speed_value);
   
    //delay(80);                                         // 80 ms (for approx 1.5 cms)
 
-   while(left_jump_value<100 && center_jump_value<100 && right_jump_value<100)
+   // Move the bot front until there is a large jump in the line sensor values
+   while(left_jump_value < 100 && center_jump_value < 100 && right_jump_value < 100)
    {
-     left_black_value = analogRead(left_line_sensor);
-     center_black_value = analogRead(center_line_sensor);
-     right_black_value = analogRead(right_line_sensor);
-   
-     left_jump_value = left_black_value - left_white_value;
-     center_jump_value = center_black_value - center_white_value;
-     right_jump_value = right_black_value - right_white_value;
+      // Read the analog values
+      left_black_value = analogRead(left_line_sensor);
+      center_black_value = analogRead(center_line_sensor);
+      right_black_value = analogRead(right_line_sensor);
+
+      // Calculate the jump in the value
+      left_jump_value = left_black_value - left_white_value;
+      center_jump_value = center_black_value - center_white_value;
+      right_jump_value = right_black_value - right_white_value;
    }
    
    robot_movement_direction = 0;
@@ -551,7 +508,6 @@ void set_robot_movement()
  *                  2. Compare the values with the threshold values to get the position accordingly
  *  Example Call  : get_bot_position()
  */
-
 int get_bot_position()
 {
   int left_sensor_value = analogRead(left_line_sensor);
@@ -662,7 +618,6 @@ int get_bot_position()
  *  Logic         : Set the angle to the required servo as required 
  *  Example Call  : movement()
  */
-
 void pick_place()
 {
    /*  Lift servo : 0 -> Up, 28 -> Down
@@ -698,14 +653,78 @@ void pick_place()
    }
 }
 
+
+/* 
+ *  Function Name : cancel_inertia
+ *  Input         : None
+ *  Output        : None
+ *  Logic         : When the robot is moving one direction, make the robot move in the opposite direction for very small distance
+ *                  so that the inertia in the motor is nullified.
+ *  Example Call  : cancel_inertia()
+ */
 void cancel_inertia()
 {
-   if(robot_movement_direction == 1 || robot_movement_direction == -1)
+   // Set the direction of the robot in opposite direction
+   robot_movement_direction *= -1;
+   set_robot_movement();
+   
+   // Run the motors for a short time to cancel the inertia of rotation
+   delay((1/* cm*/*60)/(motor_rpm*3.142*wheel_diameter)*1000);
+
+   // Stop the motors.
+   robot_movement_direction = 0;
+   set_robot_movement();
+}
+
+
+/*
+int movement_without_pwm()
+{
+   int error = get_bot_position();
+   if (abs(error < 2))
    {
-      robot_movement_direction *= -1;
-      set_robot_movement();
-      delay(10);
+      analogWrite(enable_left_motor, left_motor_base_pwm);
+      analogWrite(enable_right_motor, right_motor_base_pwm);
+      return 1;
+   }
+   else
+   {
       robot_movement_direction = 0;
       set_robot_movement();
+      if (error == -2)
+         Serial.println("Left-branched Node");
+      else if (error == 2)
+         Serial.println("Right-branched Node");
+      else if (error == -3)
+         Serial.println("White Space");
+      else if (error == 3)
+         Serial.println("Node");   
+      return 0;
    }
 }
+
+// PD Code:
+     int motorSpeed = Kp * error + Kd * (error - lastError);
+     lastError = error;
+     if (robot_movement_direction == 1)                           // 1 - Forward
+     {
+        // Calculate the motor driving speed
+        right_motor_pwm = right_motor_base_pwm + motorSpeed;
+        left_motor_pwm = left_motor_base_pwm - motorSpeed;
+     }
+     else if (robot_movement_direction == -1)                     // -1 - Backward
+     {
+        // Calculate the motor driving speed
+        right_motor_pwm = right_motor_base_pwm - motorSpeed;
+        left_motor_pwm = left_motor_base_pwm + motorSpeed;
+     }
+     
+     if (right_motor_pwm > right_motor_max_pwm )
+        right_motor_pwm = right_motor_max_pwm;                    // prevent the motor from going beyond max speed
+     if (left_motor_pwm > left_motor_max_pwm )
+        left_motor_pwm = left_motor_max_pwm;
+     if (right_motor_pwm < 0)
+        right_motor_pwm = 0;                                      // keep the motor speed positive
+     if (left_motor_pwm < 0)
+        left_motor_pwm = 0;
+*/
