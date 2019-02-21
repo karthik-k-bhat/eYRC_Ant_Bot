@@ -1,15 +1,11 @@
-/* Last Modified on: 16-Feb-2019
+/* Last Modified on: 18-Feb-2019
  * Last Modified by: Vishwas N S
  * Last Modified details: 
- * 1. Added "Job Done" communication
- * 2. Changed the line follow logic
- * 3. Added ineria cancel logic.
- * 
+ * 1. Backward movement fix. 
  *
  * To-Do
- * 1. Check why Left motor is not going backward
- * 2. Add PID to line following to make it smooth
- * 3. Place Mechanism with robot movements 
+ * 1. Add PID to line following to make it smooth
+ * 2. Place Mechanism with robot movements 
  */
 
 /*
@@ -36,8 +32,8 @@
 // Motor parameter to control the speeds
 #define right_motor_base_pwm 255                  // Base pwm - Such that the robot goes in a straight line   
 #define left_motor_base_pwm 255
-#define motor_speed_variation 50
-#define motor_low_speed_value 150
+#define motor_speed_variation 100
+#define motor_low_speed_value 100
 
 // Pin numbers for Motor control with L298D
 #define forward_left_motor 4
@@ -165,8 +161,8 @@ void loop()
         // If robot already on a node, move front
         if (abs(get_bot_position()) >= 2)
         {
-           analogWrite(enable_left_motor, left_motor_base_pwm);
-           analogWrite(enable_right_motor, right_motor_base_pwm);
+           analogWrite(enable_left_motor, left_motor_base_pwm-50);
+           analogWrite(enable_right_motor, right_motor_base_pwm-50);
            delay((3*60)/(motor_rpm*3.142*wheel_diameter)*1000);                         // Move front, away from node (3 cms).
         }
         
@@ -180,6 +176,7 @@ void loop()
               {
                  robot_movement_direction = 0;
                  set_robot_movement();
+                 bot_position = 0;
                  break;
               }
            }
@@ -250,18 +247,15 @@ void loop()
            robot_movement_direction = -1;
         set_robot_movement();
         
-        // Run the motor. (PWM is used to keep the bot move in straight line)
-        analogWrite(enable_left_motor, left_motor_base_pwm);
-        analogWrite(enable_right_motor, right_motor_base_pwm);
+        // Run the motor. (PWM is used to keep the bot move in straight line
+          analogWrite(enable_left_motor, left_motor_base_pwm);
+          analogWrite(enable_right_motor, right_motor_base_pwm);
 
         // Keep the motor running until the robot travels the given distance
         // Formuala to caculate time delay in seconds = (distance_to_travel * 60)/(rpm_of_motor * pi * diameter_of_wheel)
         delay((abs(distance)*60)/(motor_rpm*3.142*wheel_diameter)*1000);
 
         // Stop the motors by cancelling the inertia
-        
-        //digitalWrite(enable_left_motor, LOW);
-        //digitalWrite(enable_right_motor, LOW);
         cancel_inertia();
      }
      else if (data == 'W')
@@ -324,10 +318,10 @@ void loop()
   }
   else
   {
-     if(error == -3 && bot_position == -1)                        // Turn Left
+     if(error == -3 && bot_position == 1)                        // Turn Left
         right_motor_pwm -= motor_speed_variation;
         
-     else if(error == -3 && bot_position == 1)                    // Turn Right
+     else if(error == -3 && bot_position == -1)                    // Turn Right
         left_motor_pwm -= motor_speed_variation;
 
      // Run the motor at set speeds
@@ -375,10 +369,8 @@ void line_sensor_calibrate()
    analogWrite(enable_right_motor, motor_low_speed_value);
    analogWrite(enable_left_motor, motor_low_speed_value);
   
-   //delay(80);                                         // 80 ms (for approx 1.5 cms)
-
    // Move the bot front until there is a large jump in the line sensor values
-   while(left_jump_value < 100 && center_jump_value < 100 && right_jump_value < 100)
+   while(left_jump_value < 100 || center_jump_value < 100 || right_jump_value < 100)
    {
       // Read the analog values
       left_black_value = analogRead(left_line_sensor);
@@ -394,13 +386,6 @@ void line_sensor_calibrate()
    robot_movement_direction = 0;
    set_robot_movement();
    
-   /* Wait 250 milli seconds before taking value from black area.
-   delay(250);
-   
-   left_black_value = analogRead(left_line_sensor);
-   center_black_value = analogRead(center_line_sensor);
-   right_black_value = analogRead(right_line_sensor);
-   */
    Serial.print("Left sensor black value ");
    Serial.print(left_black_value);
    Serial.print(", Center sensor black value ");
@@ -414,9 +399,9 @@ void line_sensor_calibrate()
    right_sensor_threshold = ((right_black_value + right_white_value) / 2);
    */
 
-   left_sensor_threshold = (left_black_value - (left_black_value - left_white_value)/3);
-   center_sensor_threshold = (center_black_value - (center_black_value - center_white_value)/3);
-   right_sensor_threshold = (right_black_value - (right_black_value - right_white_value)/3);
+   left_sensor_threshold = (left_black_value - (left_black_value - left_white_value)/4);
+   center_sensor_threshold = (center_black_value - (center_black_value - center_white_value)/4);
+   right_sensor_threshold = (right_black_value - (right_black_value - right_white_value)/4);
    
    Serial.print("Left sensor threshold ");
    Serial.print(left_sensor_threshold);
