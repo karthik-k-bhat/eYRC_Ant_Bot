@@ -25,7 +25,7 @@ serial_communication = serial.Serial('/dev/ttyUSB0',9600)
 bot_position = -1
 bot_direction = NORTH
 ant_hill_list = []
-block_list = []
+block_color_dict = {}
 
 # Map
 arena_map = {
@@ -47,7 +47,7 @@ arena_map = {
         14: [{-16,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13},{-14},set(),{-15}],
 }
 
-immediate_node = []
+immediate_node = [
     2,14,14,13,13,12,12,11,11,8,7,6,5,4,3,0,
     [1,6,-1,3],
     [2,10,0,9],
@@ -89,24 +89,26 @@ def run_bot():
 
 def get_block_colours():
     
-    global block_list,camera,rawCapture
-
+    global block_color_dict,camera,rawCapture
+    color_code = {"Red":1,"Green":2,"Blue":3}
     move_to_node(4)
+    node_list = [-4,-3,-2]
     for _ in range(3):
         turn(-45)
         camera.capture("Block"+str(i+1)+".jpg")
         rawCapture.truncate(0)
         colour = detection.detect_color("Block"+str(i+1)+".jpg",45)
-        block_list.append(colour)
+        block_color_dict[node_list[i]] = colour
     turn(-45)
 
     move_to_node(7)
+    node_list = [-7,-6,-5]
     for _ in range(3):
         turn(45)
         camera.capture("Block"+str(i+4)+".jpg")
         rawCapture.truncate(0)
         colour = detection.detect_color("Block"+str(i+4)+".jpg",45)
-        block_list.append(colour)
+        block_color_dict[node_list[i]] = colour
     turn(45)
 
 def get_sims():
@@ -128,7 +130,7 @@ def get_sims():
 def move(direction, distance = 0):
 
     global bot_direction,bot_position
-    talk_to_arduino("O 10")
+    talk_to_arduino("O11")
 
     turn_angle = get_turn_angle(direction)
     turn(turn_angle)
@@ -177,25 +179,53 @@ def service(ant_hill):
         elif(ant_hill['service_2']):
             trash_node = service_1_node
         else:
-            #Detect trash
+            move_to_node(service_1_node)
+            camera.capture("Trash.jpg")
+            rawCapture.truncate(0)
+            colour = detection.detect_color("Trash.jpg",45)
+            if(color == 'Yellow'):
+                trash_node = service_1_node
+            else:
+                trash_node = service_2_node
 
         move_to_node(trash_node)
         talk_to_arduino("P")
         move_to_node(-16)
         talk_to_arduino("P")
 
-    if(ant_hill['service_1'] or ant_hill['service_2']):
-        #Do the service part
+    block_node = None
+
+    if(ant_hill['service_1']):
+        for node in block_color_dict:
+            if(block_color_dict[node]==ant_hill['service_1']):
+                block_node = node
+                node = None
+                move_to_node(block_node)
+                talk_to_arduino("P")
+                move_to_node(service_1_node)
+                talk_to_arduino("P")
+                break
+
+    if(ant_hill['service_2']):
+        for node in block_color_dict:
+            if(block_color_dict[node]==ant_hill['service_2']):
+                block_node = node
+                node = None
+                move_to_node(block_node)
+                talk_to_arduino("P")
+                move_to_node(service_2_node)
+                talk_to_arduino("P")
+                break
 
 def id_to_ant_hill(id):
     ant_hill = {'ah_number':None, 'is_qah':None, 'service_1':None, 'service_2':None, "trash":None}
     binary_string = bin(id)
-    binary_string = '0'*(8-len(self.binary_string)) + self.binary_string
-    ant_hill['is_qah'] = binary_string[0]
+    binary_string = '0'*(8-len(self.binary_string)) + self.binary_string #To add preceding zeros
+    ant_hill['is_qah'] = int(binary_string[0],2)
     ant_hill['ah_number'] = int(self.binary_string[1,3],2)
     ant_hill['service_2'] = int(self.binary_string[3,5],2)
     ant_hill['service_1']  = int(self.binary_string[5,7],2)
-    ant_hill['trash'] = int(int(self.binary_string[7]))
+    ant_hill['trash'] = int(self.binary_string[7])
     return ant_hill
 
 def talk_to_arduino(action, value=None):
