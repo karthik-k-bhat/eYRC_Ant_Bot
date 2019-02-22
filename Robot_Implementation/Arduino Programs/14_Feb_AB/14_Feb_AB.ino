@@ -255,9 +255,12 @@ void loop()
         delay((abs(distance)*60)/(motor_rpm*3.142*wheel_diameter)*1000);
 
         // Stop the motors by cancelling the inertia
+<<<<<<< HEAD
         
         digitalWrite(enable_left_motor, LOW);
         digitalWrite(enable_right_motor, LOW);
+=======
+>>>>>>> ae97cbb30da8cfb33dd34302c85af22d9c0b6787
         cancel_inertia();
      }
      else if (data == 'W')
@@ -370,6 +373,7 @@ void line_sensor_calibrate()
    
    analogWrite(enable_right_motor, motor_low_speed_value);
    analogWrite(enable_left_motor, motor_low_speed_value);
+<<<<<<< HEAD
 
    delay(125);            // Move 2 cms
 
@@ -380,6 +384,11 @@ void line_sensor_calibrate()
    // Move the bot front until there is a large jump in the line sensor values
    /*
    while(left_jump_value < 100 && center_jump_value < 100 && right_jump_value < 100)
+=======
+  
+   // Move the bot front until there is a large jump in the line sensor values
+   while(left_jump_value < 100 || center_jump_value < 100 || right_jump_value < 100)
+>>>>>>> ae97cbb30da8cfb33dd34302c85af22d9c0b6787
    {
       // Read the analog values
       left_black_value = analogRead(left_line_sensor);

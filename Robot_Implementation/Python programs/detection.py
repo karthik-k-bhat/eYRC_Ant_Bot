@@ -62,3 +62,11 @@ def detect_sim_id(path_to_image):
         
 for i in range(4):
 		print(i,detect_sim_id(str(i)+".png"))
+
+def detect_trash(path_to_image):
+        img= cv2.imread(path_to_image)
+
+def yellow_detect(path_to_image):
+        img= cv2.imread(path_to_image)
+        px=list()
+        
