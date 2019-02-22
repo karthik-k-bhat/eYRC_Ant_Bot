@@ -34,14 +34,14 @@
 #define right_line_sensor A4
 
 // Motor parameter to control the speeds
-#define right_motor_base_pwm 255                  // Base pwm - Such that the robot goes in a straight line   
+#define right_motor_base_pwm 255                    // Base pwm - Such that the robot goes in a straight line   
 #define left_motor_base_pwm 255
 #define motor_speed_variation 50
 #define motor_low_speed_value 150
 
 // Pin numbers for Motor control with L298D
-#define forward_left_motor 4
-#define backward_left_motor 7
+#define forward_left_motor 7
+#define backward_left_motor 4
 #define enable_left_motor 5
 
 #define forward_right_motor 12
@@ -58,7 +58,7 @@
 #define lift_servo_pin 9
 #define camera_servo_pin 10
 
-#define buzzer 1
+#define buzzer 8
 
 // Instances for servo motors
 Servo grabber_servo;
@@ -89,9 +89,8 @@ int robot_movement_direction = 0;
  *  +3  T or + Node
  */
 int bot_position;                           // To identify the last known position of the bot
-
-bool pick_place_flag;                       // 0 - Pick Supply, 1 - Deliver supply
 bool camera_position;                       // 0 - Downwards, 1 - Upwards
+bool pick_place_flag;                       // 0 - Pick Supply, 1 - Deliver supply
 bool job_done_flag = 0;                     // Flag to denote if a job was completed or not
 bool white_space_stop = 0;                  // Flag to stop the bot if white space was detected by the line sensor
 
@@ -128,8 +127,8 @@ void setup()
    grabber_servo.write(0);
    pick_place_flag = 0;
 
-   camera_servo.write(120);
-   camera_position = 0;
+   camera_servo.write(70);
+   camera_position = 1;
 
    // To calibrate line sensor
    delay(500); //Wait for sensors to stabilize
@@ -207,11 +206,12 @@ void loop()
         set_robot_movement();
      }
 
-     // For beep the buzzer
+     // To beep the buzzer
      else if (data == 'B')
      {
         digitalWrite(buzzer, HIGH);
         delay(5000);
+        digitalWrite(buzzer, LOW);
      }
 
      // For Pick and Place mechanism
@@ -225,16 +225,15 @@ void loop()
      {
         if (camera_position)
         {
-           // 120 degree - camera facing up
-           camera_servo.write(120);
+           camera_servo.write(55);
            camera_position = 0;
         }
         else
         {
-           // 70 degree - camera facing down
            camera_servo.write(70);
            camera_position = 1;
         }
+        
      }
      
      // For a small distance movement of the bot (Front direction)
@@ -260,8 +259,8 @@ void loop()
 
         // Stop the motors by cancelling the inertia
         
-        //digitalWrite(enable_left_motor, LOW);
-        //digitalWrite(enable_right_motor, LOW);
+        digitalWrite(enable_left_motor, LOW);
+        digitalWrite(enable_right_motor, LOW);
         cancel_inertia();
      }
      else if (data == 'W')
@@ -277,7 +276,7 @@ void loop()
   // If job is done, send "Job done" signal to Pi
   if(job_done_flag)
   {
-    Serial.print("Job done");
+    Serial.println  ("Job done");
     // Clear the flag and wait for next command
     job_done_flag = 0;  
   }
@@ -324,10 +323,10 @@ void loop()
   }
   else
   {
-     if(error == -3 && bot_position == -1)                        // Turn Left
+     if(error == -3 && bot_position == 1)                        // Turn Left
         right_motor_pwm -= motor_speed_variation;
         
-     else if(error == -3 && bot_position == 1)                    // Turn Right
+     else if(error == -3 && bot_position == -1)                    // Turn Right
         left_motor_pwm -= motor_speed_variation;
 
      // Run the motor at set speeds
@@ -374,10 +373,15 @@ void line_sensor_calibrate()
    
    analogWrite(enable_right_motor, motor_low_speed_value);
    analogWrite(enable_left_motor, motor_low_speed_value);
-  
-   //delay(80);                                         // 80 ms (for approx 1.5 cms)
 
+   delay(125);            // Move 2 cms
+
+   left_black_value = analogRead(left_line_sensor);
+   center_black_value = analogRead(center_line_sensor);
+   right_black_value = analogRead(right_line_sensor);
+  
    // Move the bot front until there is a large jump in the line sensor values
+   /*
    while(left_jump_value < 100 && center_jump_value < 100 && right_jump_value < 100)
    {
       // Read the analog values
@@ -390,7 +394,7 @@ void line_sensor_calibrate()
       center_jump_value = center_black_value - center_white_value;
       right_jump_value = right_black_value - right_white_value;
    }
-   
+   */
    robot_movement_direction = 0;
    set_robot_movement();
    
@@ -669,7 +673,7 @@ void cancel_inertia()
    set_robot_movement();
    
    // Run the motors for a short time to cancel the inertia of rotation
-   delay((1/* cm*/*60)/(motor_rpm*3.142*wheel_diameter)*1000);
+   delay((2*60)/(motor_rpm*3.142*wheel_diameter)*1000);
 
    // Stop the motors.
    robot_movement_direction = 0;
