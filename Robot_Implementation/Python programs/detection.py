@@ -60,13 +60,24 @@ def detect_sim_id(path_to_image):
         aruco_id = list(det_aruco_list.keys())[0] #taking only the id value
         return aruco_id
         
-for i in range(4):
-		print(i,detect_sim_id(str(i)+".png"))
+#for i in range(4):
+#		print(i,detect_sim_id(str(i)+".png"))
 
 def detect_trash(path_to_image):
         img= cv2.imread(path_to_image)
-
-def yellow_detect(path_to_image):
-        img= cv2.imread(path_to_image)
-        px=list()
-        
+        px = list()
+        count=0
+        px.clear()
+                             
+        px.append(list(img[184,110]))   #getting bgr values of that pixel and adding to list px
+        px.append(list(img[340,52]))
+        px.append(list(img[430,160]))
+        px.append(list(img[297,207]))
+        #print(px)
+        for i in px:
+                if((i[0]-i[2])>60 and (i[1]-i[2])>60):
+                        count=count+1
+        if(count>2):
+                return 'T'
+        else:
+                return 'W'
