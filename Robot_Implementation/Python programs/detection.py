@@ -78,6 +78,6 @@ def detect_trash(path_to_image):
                 if((i[0]-i[2])>60 and (i[1]-i[2])>60):
                         count=count+1
         if(count>2):
-                return 'T'
+                return True
         else:
-                return 'W'
+                return False

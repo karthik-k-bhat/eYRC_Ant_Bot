@@ -129,9 +129,6 @@ void setup()
    // To calibrate line sensor
    delay(500); //Wait for sensors to stabilize
    line_sensor_calibrate();
-
-   //Send a singal to Pi saying setup is done.
-   Serial.print("Job done");
 }
 
 // Default arduino loop function - to keep executing the instructions indefintely
@@ -277,7 +274,7 @@ void loop()
     // Clear the flag and wait for next command
     job_done_flag = 0;  
   }
-   
+
 }
 
 /* 
