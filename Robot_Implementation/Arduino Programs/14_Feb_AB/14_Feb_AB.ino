@@ -32,8 +32,7 @@
 // Motor parameter to control the speeds
 #define right_motor_base_pwm 255                    // Base pwm - Such that the robot goes in a straight line   
 #define left_motor_base_pwm 255
-#define motor_speed_variation 100
-#define motor_low_speed_value 100
+#define motor_speed_variation 20
 
 // Pin numbers for Motor control with L298D
 #define forward_left_motor 7
@@ -118,7 +117,6 @@ void setup()
     *  Grab servo: 0 -> Open, 180 -> Close
     *  Camera servo: 120 -> Up 70 -> Down facing 
     */
-   
    lift_servo.write(0);
    grabber_servo.write(0);
    pick_place_flag = 0;
@@ -126,10 +124,22 @@ void setup()
    camera_servo.write(70);
    camera_position = 1;
 
-   // To calibrate line sensor
-   delay(500); //Wait for sensors to stabilize
-   line_sensor_calibrate();
-}
+/*   // To calibrate line sensor
+   //delay(500); //Wait for sensors to stabilize
+   //Serial.println("Job done");
+   char initialize = '0';
+   while (initialize != 'I')
+   {
+      if (Serial.available())
+      {
+          initialize = Serial.read();
+      }
+   }
+   
+   //line_sensor_calibrate();
+   //Send a singal to Pi saying setup is done.
+   Serial.println("Job done");
+*/}
 
 // Default arduino loop function - to keep executing the instructions indefintely
 void loop()
@@ -154,14 +164,6 @@ void loop()
         robot_movement_direction = i.toInt();
         set_robot_movement();
 
-        // If robot already on a node, move front
-        if (abs(get_bot_position()) >= 2)
-        {
-           analogWrite(enable_left_motor, left_motor_base_pwm-20);
-           analogWrite(enable_right_motor, right_motor_base_pwm-20);
-           delay((3*60)/(motor_rpm*3.142*wheel_diameter)*1000);                         // Move front, away from node (3 cms).
-        }
-        
         // Whenever the robot is on a line, move until the robot is on node.
         while(movement())
         {
@@ -177,6 +179,7 @@ void loop()
               }
            }
         }
+        job_done_flag = 1;
      }
      else if (data == 'T')
      {
@@ -198,6 +201,8 @@ void loop()
         // Stop the motors
         robot_movement_direction = 0;
         set_robot_movement();
+        cancel_inertia();
+        job_done_flag = 1;
      }
 
      // To beep the buzzer
@@ -206,12 +211,14 @@ void loop()
         digitalWrite(buzzer, HIGH);
         delay(5000);
         digitalWrite(buzzer, LOW);
+        job_done_flag = 1;
      }
 
      // For Pick and Place mechanism
      else if (data == 'P')
      {
         pick_place();
+        job_done_flag = 1;
      }
 
      // For Camera servo movements
@@ -227,7 +234,7 @@ void loop()
            camera_servo.write(70);
            camera_position = 1;
         }
-        
+        job_done_flag = 1;
      }
      
      // For a small distance movement of the bot (Front direction)
@@ -256,15 +263,22 @@ void loop()
         digitalWrite(enable_left_motor, LOW);
         digitalWrite(enable_right_motor, LOW);
         cancel_inertia();
+        job_done_flag = 1;
      }
      else if (data == 'W')
      {
         // Stop the bot when white space is found. Set the flag
         white_space_stop = 1;
+        job_done_flag = 1;
+     }
+     else if (data == 'I')
+     {
+        line_sensor_calibrate();
+        job_done_flag = 1;
      }
 
      // Set the job done flag.
-     job_done_flag = 1;
+     //job_done_flag = 1;
    }
    
   // If job is done, send "Job done" signal to Pi
@@ -274,7 +288,7 @@ void loop()
     // Clear the flag and wait for next command
     job_done_flag = 0;  
   }
-
+   
 }
 
 /* 
@@ -302,14 +316,20 @@ void loop()
 
      // Send the message to display on the serial monitor
      if (error == -2)
-        Serial.println("Left-branched Node");
+     {
+        //Serial.println("Left-branched Node");
+     }
      else if (error == 2)
-        Serial.println("Right-branched Node");
+     {
+        //Serial.println("Right-branched Node");
+     }
      else if (error == 3)
-        Serial.println("T-branched Space Node");
+     {
+        //Serial.println("T-branched Space Node");
+     }
      else if (error == -3)
      {
-        Serial.println("White Space");
+        //Serial.println("White Space");
         // Clear the white_space_stop flag once white space is detected
         white_space_stop = 0;
      }
@@ -343,12 +363,13 @@ void loop()
  */
 void line_sensor_calibrate()
 {
-   Serial.println("Calibrating Line Sensor");
+   //Serial.println("Calibrating Line Sensor");
    int left_white_value = 0, left_black_value = 0;
    int center_white_value = 0, center_black_value = 0;
    int right_white_value = 0, right_black_value = 0; 
-
+   
    int left_jump_value = 0, right_jump_value = 0, center_jump_value = 0;
+   //long time_started = 0, time_moved=0;
 
    // Read the analog values
    left_white_value = analogRead(left_line_sensor);
@@ -361,26 +382,19 @@ void line_sensor_calibrate()
    Serial.print(", Center sensor white value ");
    Serial.print(center_white_value);
    Serial.print(", Right sensor white value ");
-   Serial.println( right_white_value);
+   Serial.println( right_white_value); 
+   
    robot_movement_direction = 1;
    set_robot_movement();
    
-   analogWrite(enable_right_motor, motor_low_speed_value);
-   analogWrite(enable_left_motor, motor_low_speed_value);
-   delay(125);            // Move 2 cms
+   analogWrite(enable_right_motor, right_motor_base_pwm);
+   analogWrite(enable_left_motor, left_motor_base_pwm);
+   //delay(125);            // Move 2 cms
 
-   left_black_value = analogRead(left_line_sensor);
-   center_black_value = analogRead(center_line_sensor);
-   right_black_value = analogRead(right_line_sensor);
-  
+   //time_started = millis();
+   
    // Move the bot front until there is a large jump in the line sensor values
-   /*
-   while(left_jump_value < 100 && center_jump_value < 100 && right_jump_value < 100)
-=======
-  
-   // Move the bot front until there is a large jump in the line sensor values
-   while(left_jump_value < 100 || center_jump_value < 100 || right_jump_value < 100)
->>>>>>> ae97cbb30da8cfb33dd34302c85af22d9c0b6787
+   while ((left_jump_value < 100 || center_jump_value < 100 || right_jump_value < 100))// || (time_moved < 200 && time_moved >100))
    {
       // Read the analog values
       left_black_value = analogRead(left_line_sensor);
@@ -391,8 +405,9 @@ void line_sensor_calibrate()
       left_jump_value = left_black_value - left_white_value;
       center_jump_value = center_black_value - center_white_value;
       right_jump_value = right_black_value - right_white_value;
+      //time_moved = millis() - time_started;
    }
-   */
+   
    robot_movement_direction = 0;
    set_robot_movement();
    
@@ -402,16 +417,16 @@ void line_sensor_calibrate()
    Serial.print(center_black_value);
    Serial.print(", Right sensor black value ");
    Serial.println( right_black_value);  
-
+   
    /*
    left_sensor_threshold = ((left_black_value + left_white_value) / 2);
    center_sensor_threshold = ((center_black_value + center_white_value) / 2);
    right_sensor_threshold = ((right_black_value + right_white_value) / 2);
    */
 
-   left_sensor_threshold = (left_black_value - (left_black_value - left_white_value)/4);
-   center_sensor_threshold = (center_black_value - (center_black_value - center_white_value)/4);
-   right_sensor_threshold = (right_black_value - (right_black_value - right_white_value)/4);
+   left_sensor_threshold = (left_black_value - (left_black_value - left_white_value)/3);
+   center_sensor_threshold = (center_black_value - (center_black_value - center_white_value)/3);
+   right_sensor_threshold = (right_black_value - (right_black_value - right_white_value)/3);
    
    Serial.print("Left sensor threshold ");
    Serial.print(left_sensor_threshold);
@@ -447,7 +462,7 @@ void set_robot_movement()
       digitalWrite(backward_right_motor, LOW);
       digitalWrite(forward_left_motor, HIGH);
       digitalWrite(backward_left_motor, LOW);
-      Serial.println("Direction Set: Forward");
+      //Serial.println("Direction Set: Forward");
    }
    else if (robot_movement_direction == -1)         // -1 -> Backward
    {
@@ -455,7 +470,7 @@ void set_robot_movement()
       digitalWrite(backward_right_motor, HIGH);
       digitalWrite(forward_left_motor, LOW);
       digitalWrite(backward_left_motor, HIGH);
-      Serial.println("Direction Set: Backward");
+      //Serial.println("Direction Set: Backward");
    }
    else if (robot_movement_direction == 2)          // 2 -> Clockwise (Right)
    {
@@ -466,7 +481,7 @@ void set_robot_movement()
 
       digitalWrite(enable_right_motor, HIGH);
       digitalWrite(enable_left_motor, HIGH);
-      Serial.println("Direction Set: Right");
+      //Serial.println("Direction Set: Right");
    }
    else if (robot_movement_direction == -2)         // -2 -> Counter-clockwise (Left)
    {
@@ -477,7 +492,7 @@ void set_robot_movement()
 
       digitalWrite(enable_right_motor, HIGH);
       digitalWrite(enable_left_motor, HIGH);
-      Serial.println("Direction Set: Left");
+      //Serial.println("Direction Set: Left");
    }
    else if (robot_movement_direction == 0)          // 0 -> Stop
    {
@@ -512,12 +527,14 @@ int get_bot_position()
   /*  Black Line: "Greater than/equal to" sensor_threshold
    *  White Line: "Lesser than/equal to" sensor_threshold
    */
-  Serial.print(left_sensor_value);
+  
+  /*Serial.print(left_sensor_value);
   Serial.print(" ");
   Serial.print(center_sensor_value);
   Serial.print(" ");
   Serial.println(right_sensor_value);
-
+  */
+  
   /*  Left Sensor on White space
    *  Center Sensor on White space
    *  Right Sensor on Black
@@ -664,7 +681,7 @@ void cancel_inertia()
    set_robot_movement();
    
    // Run the motors for a short time to cancel the inertia of rotation
-   delay((2*60)/(motor_rpm*3.142*wheel_diameter)*1000);
+   delay(100);//(2*60)/(motor_rpm*3.142*wheel_diameter)*1000);
 
    // Stop the motors.
    robot_movement_direction = 0;
