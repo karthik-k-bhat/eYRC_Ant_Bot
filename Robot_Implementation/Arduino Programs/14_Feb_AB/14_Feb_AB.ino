@@ -30,8 +30,12 @@
 #define right_line_sensor A4
 
 // Motor parameter to control the speeds
-#define right_motor_base_pwm 255                    // Base pwm - Such that the robot goes in a straight line   
+#define right_motor_base_pwm 245                    // Base pwm - Such that the robot goes in a straight line   
 #define left_motor_base_pwm 255
+
+#define left_motor_slow_speed_pwm 136
+#define right_motor_slow_speed_pwm 100
+
 #define motor_speed_variation 20
 
 // Pin numbers for Motor control with L298D
@@ -61,9 +65,9 @@ Servo lift_servo;
 Servo camera_servo;
 
 // Global Variables Declaration
-int left_sensor_threshold;                        // Threshold values for line sensor
-int center_sensor_threshold;
-int right_sensor_threshold;
+int left_sensor_threshold = 750;                        // Threshold values for line sensor
+int center_sensor_threshold = 750;
+int right_sensor_threshold = 750;
 
 /* To indicate the direction of movement for robot
  *  -2  Left direction
@@ -284,7 +288,7 @@ void loop()
   // If job is done, send "Job done" signal to Pi
   if(job_done_flag)
   {
-    Serial.println  ("Job done");
+    Serial.println("Job done");
     // Clear the flag and wait for next command
     job_done_flag = 0;  
   }
@@ -337,6 +341,7 @@ void loop()
   }
   else
   {
+
      if(error == -3 && bot_position == 1)                        // Turn Left
         right_motor_pwm -= motor_speed_variation;
         
@@ -387,8 +392,8 @@ void line_sensor_calibrate()
    robot_movement_direction = 1;
    set_robot_movement();
    
-   analogWrite(enable_right_motor, right_motor_base_pwm);
-   analogWrite(enable_left_motor, left_motor_base_pwm);
+   analogWrite(enable_right_motor, right_motor_slow_speed_pwm);
+   analogWrite(enable_left_motor, left_motor_slow_speed_pwm);
    //delay(125);            // Move 2 cms
 
    //time_started = millis();
@@ -528,12 +533,12 @@ int get_bot_position()
    *  White Line: "Lesser than/equal to" sensor_threshold
    */
   
-  /*Serial.print(left_sensor_value);
+  Serial.print(left_sensor_value);
   Serial.print(" ");
   Serial.print(center_sensor_value);
   Serial.print(" ");
   Serial.println(right_sensor_value);
-  */
+
   
   /*  Left Sensor on White space
    *  Center Sensor on White space
@@ -649,7 +654,7 @@ void pick_place()
       // No block lifted
       pick_place_flag = 0;
    }
-   else                             // Pick the suuply
+   else                             // Pick the supply
    {
       // Go down
       lift_servo.write(28);
