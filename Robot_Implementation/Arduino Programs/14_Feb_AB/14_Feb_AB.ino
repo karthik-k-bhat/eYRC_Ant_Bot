@@ -160,8 +160,8 @@ void loop()
         // If robot already on a node, move front
         if (abs(get_bot_position()) >= 2)
         {
-           analogWrite(enable_left_motor, left_motor_base_pwm-50);
-           analogWrite(enable_right_motor, right_motor_base_pwm-50);
+           analogWrite(enable_left_motor, left_motor_base_pwm-20);
+           analogWrite(enable_right_motor, right_motor_base_pwm-20);
            delay((3*60)/(motor_rpm*3.142*wheel_diameter)*1000);                         // Move front, away from node (3 cms).
         }
         
@@ -255,12 +255,9 @@ void loop()
         delay((abs(distance)*60)/(motor_rpm*3.142*wheel_diameter)*1000);
 
         // Stop the motors by cancelling the inertia
-<<<<<<< HEAD
         
         digitalWrite(enable_left_motor, LOW);
         digitalWrite(enable_right_motor, LOW);
-=======
->>>>>>> ae97cbb30da8cfb33dd34302c85af22d9c0b6787
         cancel_inertia();
      }
      else if (data == 'W')
@@ -373,8 +370,6 @@ void line_sensor_calibrate()
    
    analogWrite(enable_right_motor, motor_low_speed_value);
    analogWrite(enable_left_motor, motor_low_speed_value);
-<<<<<<< HEAD
-
    delay(125);            // Move 2 cms
 
    left_black_value = analogRead(left_line_sensor);
