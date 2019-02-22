@@ -74,18 +74,23 @@ camera.framerate = 16                     # Set the frame rate
 rawCapture = PiRGBArray(camera, size=res) 
 
 def run_bot():
-
+    print("Running bot.")
     get_block_colours()
+    print("Blocks scanned")
     get_sims()
+    print("Sims scanned")
 
     for ant_hill in ant_hill_list:
         if(ant_hill['is_qah']):
+            print("QAH id:",ant_hill['ah_number'])
             service(ant_hill)
+            print("Serviced QAH")
             ant_hill_list.remove(ant_hill)
             break
 
     for ant_hill in ant_hill_list:
         service(ant_hill)
+        print("Serviced AH")
 
 def get_block_colours():
     
@@ -99,6 +104,8 @@ def get_block_colours():
         rawCapture.truncate(0)
         colour = detection.detect_color("Block"+str(i+1)+".jpg",45)
         block_color_dict[node_list[i]] = colour
+        print("Shrub node:",node_list[i])
+        print("Color:",color)
     turn(-45)
 
     move_to_node(7)
@@ -182,8 +189,8 @@ def service(ant_hill):
             move_to_node(service_1_node)
             camera.capture("Trash.jpg")
             rawCapture.truncate(0)
-            colour = detection.detect_color("Trash.jpg",45)
-            if(color == 'Yellow'):
+            result = detection.detect_color("Trash.jpg",45)
+            if(result == True):
                 trash_node = service_1_node
             else:
                 trash_node = service_2_node
@@ -191,7 +198,13 @@ def service(ant_hill):
         move_to_node(trash_node)
         talk_to_arduino("P")
         move_to_node(-16)
+        if(first_trash_deposited):
+            turn_angle = 22
+        else:
+            turn_angle = -22
+        turn(turn_angle)
         talk_to_arduino("P")
+        turn(turn_angle)
 
     block_node = None
 
@@ -231,20 +244,19 @@ def id_to_ant_hill(id):
 def talk_to_arduino(action, value=None):
     global serial_communication
 
-    while(1):
-        if(serial_communication.in_waiting>0):
-            response = serial_communication.readline().decode().strip("\n").strip("\r")
-        if response == "1":
-            print("Job Done")
-            break
-        else:
-            print(response)
-        time.sleep(1)
-
     serial_communication.write(action.encode())
     
     if(value is not None):
         serial_communication.write(value.encode())
+
+    while(1):
+        if(serial_communication.in_waiting>0):
+            response = serial_communication.readline().decode().strip("\n").strip("\r")
+        if response == "1":
+            break
+        else:
+            print(response)
+        time.sleep(1)
 
 if __name__ == "__main__":
     run_bot()
