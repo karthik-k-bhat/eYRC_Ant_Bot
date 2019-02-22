@@ -81,3 +81,5 @@ def detect_trash(path_to_image):
                 return 'T'
         else:
                 return 'W'
+
+print(detect_sim_id("SIM3.JPG"))
