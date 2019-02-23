@@ -26,13 +26,13 @@
 #define right_line_sensor A4
 
 // Motor parameter to control the speeds
-#define right_motor_base_pwm 250                    // Base pwm - Such that the robot goes in a straight line   
+#define right_motor_base_pwm 250                   // Base pwm - Such that the robot goes in a straight line   
 #define left_motor_base_pwm 255
 
 #define left_motor_slow_speed_pwm 205
 #define right_motor_slow_speed_pwm 150
 
-#define motor_speed_variation 60
+#define motor_speed_variation 150
 #define jump_threshold 100
 
 // Pin numbers for Motor control with L298D
@@ -93,6 +93,9 @@ bool pick_place_flag;                       // 0 - Pick Supply, 1 - Deliver supp
 bool job_done_flag = 0;                     // Flag to denote if a job was completed or not
 bool white_space_stop = 0;                  // Flag to stop the bot if white space was detected by the line sensor
 bool node_stop = 0;
+
+int left_motor_pwm;
+int right_motor_pwm;
 
 // Default arduino setup function - to run the code initially one time
 void setup()
@@ -155,6 +158,8 @@ void loop()
         set_robot_movement();
 
         // Whenever the robot is on a line, move until the robot is on node.
+        node_flag = 0;
+        node_count = 0;
         while(movement(number_of_nodes))
         {
            if (Serial.available())
@@ -170,6 +175,7 @@ void loop()
            }
         }
         job_done_flag = 1;
+        node_flag = 0;
      }
      else if (data == 'T')
      {
@@ -321,23 +327,46 @@ void loop()
 bool movement(int number_of_nodes)
 {
    int error = get_bot_position();
-   int right_motor_pwm = right_motor_base_pwm;
-   int left_motor_pwm = left_motor_base_pwm;
-   if((bot_position == 1))                          // Turn right      // error = -3 (removed)
+   if(error == -3)
    {
-      if (robot_movement_direction == 1)
-         right_motor_pwm -= motor_speed_variation;
-      else if (robot_movement_direction == -1)
-         right_motor_pwm += (motor_speed_variation/2);
+      node_flag = 0;
+      if(white_space_stop)
+      {
+         robot_movement_direction = 0;
+         set_robot_movement();
+         white_space_stop = 0;
+         return 0;
+      }
    }
-   else if(bot_position == -1)                    // Turn Left
+   else if(abs(error) == 1 or error == 0)
    {
-      if (robot_movement_direction == 1)
-         left_motor_pwm -= motor_speed_variation;
-      else if (robot_movement_direction == -1)
-         left_motor_pwm += (motor_speed_variation/2);
+      node_flag = 0;
    }
-        
+   else if(abs(error) == 2 || error == 3)
+   {
+      if(node_flag == 0)
+      {
+         node_flag = 1;
+         node_count ++;
+      }
+      if(node_count == number_of_nodes)
+      {
+         if(node_stop == 0)
+         {
+            analogWrite(enable_left_motor, left_motor_base_pwm);
+            analogWrite(enable_right_motor, right_motor_base_pwm);
+            delay((abs(sensor_wheel_distance)*60)/(motor_rpm*3.142*wheel_diameter)*1000);
+         }
+         robot_movement_direction = 0;
+         set_robot_movement();
+         return 0;
+      }
+   }
+   analogWrite(enable_left_motor, left_motor_pwm);
+   analogWrite(enable_right_motor, right_motor_pwm);
+   return 1;
+
+   /*
    if((abs(error) == 2 || error == 3) || (error == -3 && white_space_stop))
    {
       if (error == -3)
@@ -378,9 +407,11 @@ bool movement(int number_of_nodes)
       // Run the motor at set speeds
       analogWrite(enable_left_motor, left_motor_pwm);
       analogWrite(enable_right_motor, right_motor_pwm);
-      return 1;
       node_flag = 0;
+      return 1;
    }
+   */
+
 }
 
 /* 
@@ -457,11 +488,11 @@ void line_sensor_calibrate()
     left = analogRead(left_line_sensor);
     center = analogRead(center_line_sensor);
     right = analogRead(right_line_sensor);
-    if(left>left_black_value)
+    if(left<left_black_value)
       left_black_value = left;
-    if(right>right_black_value)
+    if(right<right_black_value)
       right_black_value = right;
-    if(center>center_black_value)
+    if(center<center_black_value)
       center_black_value = center;
    }
    
@@ -571,7 +602,6 @@ int get_bot_position()
   int left_sensor_value = analogRead(left_line_sensor);
   int center_sensor_value = analogRead(center_line_sensor);
   int right_sensor_value = analogRead(right_line_sensor);
-
   /*  Black Line: "Greater than/equal to" sensor_threshold
    *  White Line: "Lesser than/equal to" sensor_threshold
    */
@@ -587,6 +617,10 @@ int get_bot_position()
   {
     // RIGHT CONDITION;
     bot_position = 1;
+    if (robot_movement_direction == 1)
+         right_motor_pwm = right_motor_base_pwm - motor_speed_variation;
+      else if (robot_movement_direction == -1)
+         right_motor_pwm = right_motor_base_pwm + (motor_speed_variation/2);
     return 1;
   }
 
@@ -600,6 +634,8 @@ int get_bot_position()
   {
     // STRAIGHT LINE CONDITION;
     bot_position = 0;
+    left_motor_pwm = left_motor_base_pwm;
+    right_motor_pwm = right_motor_base_pwm;
     return 0;
   }
 
@@ -613,6 +649,10 @@ int get_bot_position()
   {
     // LEFT CONDITION;
     bot_position = -1;
+    if (robot_movement_direction == 1)
+      left_motor_pwm = left_motor_base_pwm - motor_speed_variation;
+   else if (robot_movement_direction == -1)
+      left_motor_pwm = left_motor_base_pwm + (motor_speed_variation/2);
     return -1;
   }
 
@@ -729,4 +769,50 @@ void cancel_inertia()
    // Stop the motors.
    robot_movement_direction = 0;
    set_robot_movement();
+}
+
+void set_bot_on_line()
+{
+  int left_sensor_value = analogRead(left_line_sensor);
+  int center_sensor_value = analogRead(center_line_sensor);
+  int right_sensor_value = analogRead(right_line_sensor);
+  right_motor_pwm = right_motor_base_pwm;
+  left_motor_pwm = left_motor_base_pwm;
+  /*  Black Line: "Greater than/equal to" sensor_threshold
+   *  White Line: "Lesser than/equal to" sensor_threshold
+   */
+
+  
+  /*  Left Sensor on White space
+   *  Center Sensor on White space
+   *  Right Sensor on Black
+   */
+  if (left_sensor_value <= left_sensor_threshold &&
+      center_sensor_value <= center_sensor_threshold &&
+      right_sensor_value >= right_sensor_threshold)
+  {
+  
+  }
+
+  /*  Left Sensor on White space
+   *  Center Sensor on Black
+   *  Right Sensor on White space
+   */
+
+  /*  Left Sensor on Black
+   *  Center Sensor on White space
+   *  Right Sensor on White space
+   */
+  else if (left_sensor_value >= left_sensor_threshold &&
+           center_sensor_value <= center_sensor_threshold &&
+           right_sensor_value <= right_sensor_threshold)
+  {
+    // LEFT CONDITION;
+    bot_position = -1;
+    if (robot_movement_direction == 1)
+      left_motor_pwm -= motor_speed_variation;
+   else if (robot_movement_direction == -1)
+      left_motor_pwm += (motor_speed_variation/2);
+    return -1;
+  }
 }
