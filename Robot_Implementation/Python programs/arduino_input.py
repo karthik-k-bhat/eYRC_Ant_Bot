@@ -18,13 +18,15 @@ def talk_to_arduino(action, value=None):
     if(value is not None):
         serial_communication.write(value.encode())
 
-#Wait for pi to initialize
-time.sleep(5)
+if __name__ == "__main__":
+    #Wait for pi to initialize
+    time.sleep(5)
 
-try:
-    while(1):
-        s = input().split()
-        talk_to_arduino(*s)
+    try:
+        while(1):
+            s = input().split()
+            talk_to_arduino(*s)
 
-except KeyboardInterrupt:
-    print("Closing")
+    except KeyboardInterrupt:
+        talk_to_arduino("X")
+        print("Closing")

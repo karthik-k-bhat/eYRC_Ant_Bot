@@ -67,11 +67,11 @@ immediate_node = [
 ]
 
 # Camera
-resolution = (608, 368)                   # resolution for the frame
+resolution = (640, 480)                   # resolution for the frame
 camera = PiCamera()                       # To initialize the PiCamera
 camera.resolution = resolution            # set the resolution of the camera
 camera.framerate = 16                     # Set the frame rate
-rawCapture = PiRGBArray(camera, size=res) 
+rawCapture = PiRGBArray(camera, size=resolution) 
 
 def run_bot():
     print("Running bot.")
@@ -99,7 +99,7 @@ def get_block_colours():
     color_code = {"Red":1,"Green":2,"Blue":3}
     move_to_node(4)
     node_list = [-4,-3,-2]
-    for _ in range(3):
+    for i in range(3):
         turn(-45)
         time.sleep(2.5)
         camera.capture("Block"+str(i+1)+".jpg")
@@ -113,7 +113,7 @@ def get_block_colours():
 
     move_to_node(7)
     node_list = [-7,-6,-5]
-    for _ in range(3):
+    for i in range(3):
         turn(45)
         time.sleep(2.5)
         camera.capture("Block"+str(i+4)+".jpg")
@@ -259,11 +259,10 @@ def talk_to_arduino(action, value=None):
     while(1):
         if(serial_communication.in_waiting>0):
             response = serial_communication.readline().decode().strip("\n").strip("\r")
-        if response == "1":
-            break
-        else:
-            print(response)
-        time.sleep(1)
+            if response == "Job done":
+                break
+            else:
+                print(response)
 
 if __name__ == "__main__":
     run_bot()
