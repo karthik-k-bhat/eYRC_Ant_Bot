@@ -337,6 +337,8 @@ bool movement(int number_of_nodes)
       else if (robot_movement_direction == -1)
          left_motor_pwm += (motor_speed_variation/2);
    }
+   if(abs(error) != 2 || error !=3)
+      node_flag=0;
         
    if((abs(error) == 2 || error == 3) || (error == -3 && white_space_stop))
    {
@@ -369,8 +371,8 @@ bool movement(int number_of_nodes)
             return 0;
          }
       }
-      analogWrite(enable_left_motor, left_motor_base_pwm);
-      analogWrite(enable_right_motor, right_motor_base_pwm);
+      analogWrite(enable_left_motor, left_motor_pwm);
+      analogWrite(enable_right_motor, right_motor_pwm);
       return 1;
    }
    else
