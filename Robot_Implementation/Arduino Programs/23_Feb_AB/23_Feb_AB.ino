@@ -21,8 +21,8 @@
 #include <Servo.h>
 
 // PD Values for line correction (PID where Ki = 0)
-//#define Kp 0.5
-//#define Kd 1
+#define Kp 0.5
+#define Kd 1
 
 // Pin numbers for line sensors
 #define left_line_sensor A0
@@ -36,7 +36,7 @@
 #define left_motor_slow_speed_pwm 205
 #define right_motor_slow_speed_pwm 150
 
-#define motor_speed_variation 40
+#define motor_speed_variation 60
 #define jump_threshold 100
 
 // Pin numbers for Motor control with L298D
@@ -395,19 +395,10 @@ void line_sensor_calibrate()
    //long time_started = 0, time_moved=0;
 
    // Read the analog values
-   int tries = 50,left=0,right=0,center=0;
-   for(int i=0;i<tries;i++)
-   {
-    left = analogRead(left_line_sensor);
-    center = analogRead(center_line_sensor);
-    right = analogRead(right_line_sensor);
-    if(left>left_white_value)
-      left_white_value = left;
-    if(right>right_white_value)
-      right_white_value = right;
-    if(center>center_white_value)
-      center_white_value = center;
-   }
+   left_white_value = analogRead(left_line_sensor);
+   center_white_value = analogRead(center_line_sensor);
+   right_white_value = analogRead(right_line_sensor);
+
    // Print the value on the Serial monitor
    Serial.print("Left sensor white value ");
    Serial.print(left_white_value);
@@ -441,19 +432,6 @@ void line_sensor_calibrate()
 
    robot_movement_direction = 0;
    set_robot_movement();
-
-   for(int i=0;i<tries;i++)
-   {
-    left = analogRead(left_line_sensor);
-    center = analogRead(center_line_sensor);
-    right = analogRead(right_line_sensor);
-    if(left>left_black_value)
-      left_black_value = left;
-    if(right>right_black_value)
-      right_black_value = right;
-    if(center>center_black_value)
-      center_black_value = center;
-   }
    
    Serial.print("Left sensor black value ");
    Serial.print(left_black_value);
@@ -725,7 +703,7 @@ void cancel_inertia()
    set_robot_movement();
    
    // Run the motors for a short time to cancel the inertia of rotation
-   delay(10);//(2*60)/(motor_rpm*3.142*wheel_diameter)*1000);
+   delay(20);//(2*60)/(motor_rpm*3.142*wheel_diameter)*1000);
    digitalWrite(enable_right_motor, HIGH);
    digitalWrite(enable_left_motor, HIGH);
    // Stop the motors.

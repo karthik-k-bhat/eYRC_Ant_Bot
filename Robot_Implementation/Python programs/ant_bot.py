@@ -95,13 +95,15 @@ def run_bot():
 def get_block_colours():
     
     global block_color_dict,camera,rawCapture
+    camera.start_preview()
     color_code = {"Red":1,"Green":2,"Blue":3}
     move_to_node(4)
     node_list = [-4,-3,-2]
     for i in range(3):
         turn(-45)
-        
+        time.sleep(2.5)
         camera.capture("Block"+str(i+1)+".jpg")
+
         rawCapture.truncate(0)
         colour = detection.detect_color("Block"+str(i+1)+".jpg",45)
         block_color_dict[node_list[i]] = colour
@@ -113,11 +115,13 @@ def get_block_colours():
     node_list = [-7,-6,-5]
     for i in range(3):
         turn(45)
+        time.sleep(2.5)
         camera.capture("Block"+str(i+4)+".jpg")
         rawCapture.truncate(0)
         colour = detection.detect_color("Block"+str(i+4)+".jpg",45)
         block_color_dict[node_list[i]] = colour
     turn(45)
+    camera.stop_preview()
 
 def get_sims():
     
@@ -125,15 +129,17 @@ def get_sims():
 
     move_to_node(1)
     turn(-45)
+    camera.start_preview()
     for i in range(4):
+        time.sleep(2.5)
         camera.capture("Sim"+str(i)+".jpg")
         rawCapture.truncate(0)
         id = detection.detect_sim_id("./Sim"+str(i*2)+".jpg")
         ant_hill = id_to_ant_hill(id)
         ant_hill_list.append(ant_hill)
         turn(90)
-
     turn(45)
+    camera.stop_preview()
 
 def move(direction, distance = 0):
 
