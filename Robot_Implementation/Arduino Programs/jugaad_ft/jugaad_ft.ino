@@ -32,7 +32,7 @@
 #define left_motor_slow_speed_pwm 205
 #define right_motor_slow_speed_pwm 150
 
-#define motor_speed_variation 40
+#define motor_speed_variation 60
 #define jump_threshold 100
 
 // Pin numbers for Motor control with L298D
@@ -193,6 +193,26 @@ void loop()
         job_done_flag = 1;
      }
 
+     else if(data == 'L' || data == 'R')
+     {
+        if (data == 'L')
+           robot_movement_direction = -2;
+        else if (data == 'R')
+           robot_movement_direction = 2;
+        set_robot_movement();
+        delay(100);
+        while(1)
+        {
+           if ((data == 'L' && get_bot_position()== -1) || (data == 'R' && get_bot_position()== 1))
+           {
+              robot_movement_direction=0;
+              set_robot_movement();
+              break;
+           }
+        }
+        job_done_flag = 1;
+     }
+
      // To beep the buzzer
      else if (data == 'B')
      {
@@ -303,11 +323,23 @@ bool movement(int number_of_nodes)
    int error = get_bot_position();
    int right_motor_pwm = right_motor_base_pwm;
    int left_motor_pwm = left_motor_base_pwm;
-
+   if((bot_position == 1))                          // Turn right      // error = -3 (removed)
+   {
+      if (robot_movement_direction == 1)
+         right_motor_pwm -= motor_speed_variation;
+      else if (robot_movement_direction == -1)
+         right_motor_pwm += (motor_speed_variation/2);
+   }
+   else if(bot_position == -1)                    // Turn Left
+   {
+      if (robot_movement_direction == 1)
+         left_motor_pwm -= motor_speed_variation;
+      else if (robot_movement_direction == -1)
+         left_motor_pwm += (motor_speed_variation/2);
+   }
+        
    if((abs(error) == 2 || error == 3) || (error == -3 && white_space_stop))
    {
-      // Stop the robot
-      
       if (error == -3)
       {
          robot_movement_direction = 0;
@@ -318,11 +350,8 @@ bool movement(int number_of_nodes)
       else if (node_flag == 0)
       {
          node_flag = 1;
+         Serial.println("Node Detected");
          node_count ++;
-         Serial.print("Node Count: ");
-         Serial.println(node_count);
-         Serial.print("Node Flag: ");
-         Serial.println(node_flag);
          
          if (node_count == number_of_nodes)
          {
@@ -340,31 +369,17 @@ bool movement(int number_of_nodes)
             return 0;
          }
       }
+      analogWrite(enable_left_motor, left_motor_base_pwm);
+      analogWrite(enable_right_motor, right_motor_base_pwm);
       return 1;
    }
    else
    {
-      node_flag = 0;
-      if(bot_position == 1)                          // Turn Left      // error = -3 (removed)
-      {
-         if (robot_movement_direction == 1)
-            right_motor_pwm -= motor_speed_variation;
-         else if (robot_movement_direction == -1)
-            right_motor_pwm += (motor_speed_variation/2);
-      }
-        
-      else if(bot_position == -1)                    // Turn Right
-      {
-         if (robot_movement_direction == 1)
-            left_motor_pwm -= motor_speed_variation;
-         else if (robot_movement_direction == -1)
-            left_motor_pwm += (motor_speed_variation/2);
-      }
-        
       // Run the motor at set speeds
       analogWrite(enable_left_motor, left_motor_pwm);
       analogWrite(enable_right_motor, right_motor_pwm);
       return 1;
+      node_flag = 0;
    }
 }
 
