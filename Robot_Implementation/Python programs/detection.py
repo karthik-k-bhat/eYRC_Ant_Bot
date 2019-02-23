@@ -65,6 +65,8 @@ def detect_sim_id(path_to_image):
 
 def detect_trash(path_to_image):
         img= cv2.imread(path_to_image)
+        #cv2.imshow("pic",img)
+        #cv2.waitKey(0)
         px = list()
         count=0
         px.clear()
@@ -82,4 +84,4 @@ def detect_trash(path_to_image):
         else:
                 return 'W'
 
-print(detect_sim_id("SIM3.JPG"))
+print(detect_trash("trash.jpg"))

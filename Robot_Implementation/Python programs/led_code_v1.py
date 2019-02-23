@@ -50,6 +50,7 @@ def turn_off_led():
     
 
 if __name__ == __main__:
+		turn_off_led()
     for i in ['R','G','B','Y']:
         turn_on_led(i)
         while (led_on_time - time.time()) <= 1 :
