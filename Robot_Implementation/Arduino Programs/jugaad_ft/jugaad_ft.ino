@@ -160,6 +160,7 @@ void loop()
         // Whenever the robot is on a line, move until the robot is on node.
         node_flag = 0;
         node_count = 0;
+        set_bot_on_line();
         while(movement(number_of_nodes))
         {
            if (Serial.available())
@@ -300,6 +301,11 @@ void loop()
      {
         line_sensor_calibrate();
         job_done_flag = 1;
+     }
+     else if (data == 'S')
+     {
+         set_bot_on_line();
+         job_done_flag = 1;
      }
   }
    
@@ -480,6 +486,7 @@ void line_sensor_calibrate()
       //  time_moved = millis() - time_started;
    }
 
+   
    robot_movement_direction = 0;
    set_robot_movement();
 
@@ -562,7 +569,7 @@ void set_robot_movement()
       digitalWrite(enable_left_motor, HIGH);
       //Serial.println("Direction Set: Right");
    }
-   else if (robot_movement_direction == -2)         // -2 -> Counter-clockwise (Left)
+   else if (robot_movement_direction == -2)        // -2 -> Counter-clockwise (Left)
    {
       digitalWrite(forward_right_motor, HIGH);
       digitalWrite(backward_right_motor, LOW);
@@ -776,8 +783,6 @@ void set_bot_on_line()
   int left_sensor_value = analogRead(left_line_sensor);
   int center_sensor_value = analogRead(center_line_sensor);
   int right_sensor_value = analogRead(right_line_sensor);
-  right_motor_pwm = right_motor_base_pwm;
-  left_motor_pwm = left_motor_base_pwm;
   /*  Black Line: "Greater than/equal to" sensor_threshold
    *  White Line: "Lesser than/equal to" sensor_threshold
    */
@@ -791,7 +796,11 @@ void set_bot_on_line()
       center_sensor_value <= center_sensor_threshold &&
       right_sensor_value >= right_sensor_threshold)
   {
-  
+    //Right condition
+    analogWrite(enable_right_motor, 0);
+    analogWrite(enable_left_motor, 100);
+    set_bot_on_line();
+    
   }
 
   /*  Left Sensor on White space
@@ -808,11 +817,19 @@ void set_bot_on_line()
            right_sensor_value <= right_sensor_threshold)
   {
     // LEFT CONDITION;
-    bot_position = -1;
-    if (robot_movement_direction == 1)
-      left_motor_pwm -= motor_speed_variation;
-   else if (robot_movement_direction == -1)
-      left_motor_pwm += (motor_speed_variation/2);
-    return -1;
+    analogWrite(enable_right_motor, 100);
+    analogWrite(enable_left_motor, 0);
+    set_bot_on_line();
+  }
+  else if (left_sensor_value <= left_sensor_threshold &&
+           center_sensor_value >= center_sensor_threshold &&
+           right_sensor_value <= right_sensor_threshold)
+  {
+    robot_movement_direction = 0;
+    set_robot_movement();
+  }
+  else
+  {
+    set_bot_on_line();
   }
 }
