@@ -49,8 +49,6 @@ raw_capture = PiRGBArray(camera, size=resolution)
 *             as the key-value pair. Each of the 4 sets represent the directions in which other nodes
 *             are present in the order North, East, South and West. An empty set represents that the
 *             node does not have a path in that diresction.
-* 
-*             Note that 
 '''
 arena_map = {
     -16: 2,-15: 3,-14: 1,-13: 3,-12: 1,-11: 3,-10: 1,-9: 3,-8: 1,-7: 0,-6: 0,-5: 0,-4: 0,-3: 0,-2: 0,-1: 0,

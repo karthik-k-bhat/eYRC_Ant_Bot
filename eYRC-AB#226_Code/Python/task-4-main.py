@@ -3,10 +3,11 @@
 * Author List : Vishwas, 
 * Filename: progress_task
 * Theme: Ant Bot
-* Functions: run_bot, get_sims,get_block_color move_to_node, move, turn, talk_to_arduino 
+* Functions: run_bot, get_sims, get_block_color, move_to_node, move, turn, get_turn_angle, service, id_to_ant_hill
+*            talk_to_arduino
 * Global Variables: serial_communication, bot_position, bot_direction, 
 *                   resolution, camera, raw_capture, arena_map, immediate_node
-*                   ah_list, block_list 
+*                   ant_hill_list, block_color_dict
 '''
 
 import serial
@@ -101,12 +102,11 @@ rawCapture = PiRGBArray(camera, size=resolution)
 '''
 
 def run_bot():
-    print("Running bot.")
+    #print("Running bot.")
     get_block_colours()
-    print("Blocks scanned")
+    #print("Blocks scanned")
     get_sims()
 
-'''
     for ant_hill in ant_hill_list:
         if(ant_hill['is_qah']):
             #print("QAH id:",ant_hill['ah_number'])
@@ -118,7 +118,6 @@ def run_bot():
     for ant_hill in ant_hill_list:
         service(ant_hill)
         #print("Serviced AH")
-'''
 
 '''
 * Function Name: get_block_colours()
@@ -130,20 +129,20 @@ def run_bot():
 '''
 
 def get_block_colours():
-    print("Getting block colors")
+    
     global block_color_dict,camera,rawCapture
     camera.start_preview()
     color_code = {"Red":1,"Green":2,"Blue":3}
-    
     move_to_node(4)
     node_list = [-4,-3,-2]
     for i in range(3):
         turn(-45)
+        time.sleep(2.5)
         camera.capture("Block"+str(i+1)+".jpg")
 
         rawCapture.truncate(0)
-        color = detection.detect_color("Block"+str(i+1)+".jpg",45)
-        block_color_dict[node_list[i]] = color
+        colour = detection.detect_color("Block"+str(i+1)+".jpg",45)
+        block_color_dict[node_list[i]] = colour
         print("Block color:",color)
     turn(-45)
 
@@ -151,10 +150,11 @@ def get_block_colours():
     node_list = [-7,-6,-5]
     for i in range(3):
         turn(45)
+        time.sleep(2.5)
         camera.capture("Block"+str(i+4)+".jpg")
         rawCapture.truncate(0)
         colour = detection.detect_color("Block"+str(i+4)+".jpg",45)
-        block_color_dict[node_list[i]] = color
+        block_color_dict[node_list[i]] = colour
         print("Block color:",color)
     turn(45)
     camera.stop_preview()
@@ -172,16 +172,18 @@ def get_sims():
     global ant_hill_list,camera,rawCapture
 
     move_to_node(1)
+    turn(-45)
     camera.start_preview()
     for i in range(4):
-        turn(45)
-        camera.capture("Sim"+str((i+1)%4)+".jpg")
+        time.sleep(2.5)
+        camera.capture("Sim"+str(i)+".jpg")
         rawCapture.truncate(0)
-        id = detection.detect_sim_id("./Sim"+str((i+1)%4)+".jpg")
+        id = detection.detect_sim_id("./Sim"+str(i*2)+".jpg")
         print("ID Detected:",id)
         ant_hill = id_to_ant_hill(id)
         ant_hill_list.append(ant_hill)
-        turn(45)
+        turn(90)
+    turn(45)
     camera.stop_preview()
 
 '''
@@ -193,18 +195,16 @@ def get_sims():
 * Example Call: move(3)
 '''
 def move(direction):
-    global bot_direction,bot_position,immediate_node
+
+    global bot_direction,bot_position
     
+
     turn_angle = get_turn_angle(direction)
     turn(turn_angle)
     
-    #print("Current bot position:",bot_position)
-    if(bot_position<0):
-        bot_position = immediate_node[bot_position+16]
-    else:
-        bot_position = immediate_node[bot_position+16][int(bot_direction)]
-    #print("Moving to position:",bot_position,"\n")
-    talk_to_arduino("M1")
+    position = immediate_node[bot_position][direction]
+    if(distance == 0):
+        talk_to_arduino("M1")
 
 '''
 * Function Name: turn
@@ -215,20 +215,15 @@ def move(direction):
 * Example Call: turn(90)
 '''
 def turn(angle):
-    if(int(angle) == 0):
-        return
-    
-    global bot_direction,turn_flag
-    #print("Current bot direction:",bot_direction)
+    global bot_direction
+
     bot_direction = (bot_direction + angle/90)%4
-    #print("Turning to direction:",bot_direction)
     if(angle == 90):
         talk_to_arduino("R") #Uses line sensing and hence more efficient.    
-    elif angle == -90:
+    else if angle == -90:
         talk_to_arduino("L")
     else:
-        talk_to_arduino("T"+str(angle))
-        
+        talk_to_arduino("T",str(angle))
 
 '''
 * Function Name: move_to_node
@@ -261,7 +256,7 @@ def move_to_node(node):
 def get_turn_angle(direction):
     global bot_direction
 
-    turn_angle = min((bot_direction-direction)%4,(direction-bot_direction)%4)*90
+    turn_angle = min(abs(direction - bot_direction),abs(direction-bot_direction+4))*90
     sign = -1 if bot_direction+2<direction else 1
     return turn_angle*sign
 
@@ -383,7 +378,7 @@ def id_to_ant_hill(id):
 '''
 def talk_to_arduino(action):
     global serial_communication
-    print("Talking to arduino:",action)
+
     serial_communication.write(action.encode())
     while(1):
         if(serial_communication.in_waiting>0):
@@ -394,5 +389,4 @@ def talk_to_arduino(action):
                 print(response)
 
 if __name__ == "__main__":
-    time.sleep(2)
     run_bot()

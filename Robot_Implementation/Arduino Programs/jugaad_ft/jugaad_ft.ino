@@ -33,7 +33,7 @@
 #define right_motor_slow_speed_pwm 150
 
 #define motor_speed_variation 150
-#define jump_threshold 100
+#define jump_threshold 50
 
 // Pin numbers for Motor control with L298D
 #define forward_left_motor 7
@@ -63,9 +63,9 @@ Servo lift_servo;
 Servo camera_servo;
 
 // Global Variables Declaration
-int left_sensor_threshold = 0;                        // Threshold values for line sensor
-int center_sensor_threshold = 0;
-int right_sensor_threshold = 0;
+int left_sensor_threshold = 500;                        // Threshold values for line sensor
+int center_sensor_threshold = 500;
+int right_sensor_threshold = 500;
 
 /* To indicate the direction of movement for robot
  *  -2  Left direction
@@ -160,7 +160,7 @@ void loop()
         // Whenever the robot is on a line, move until the robot is on node.
         node_flag = 0;
         node_count = 0;
-        set_bot_on_line();
+        //set_bot_on_line();
         while(movement(number_of_nodes))
         {
            if (Serial.available())
@@ -365,7 +365,9 @@ bool movement(int number_of_nodes)
          }
          robot_movement_direction = 0;
          set_robot_movement();
+         node_stop = 0;
          return 0;
+         
       }
    }
    analogWrite(enable_left_motor, left_motor_pwm);
@@ -466,8 +468,8 @@ void line_sensor_calibrate()
    robot_movement_direction = 1;
    set_robot_movement();
    
-   analogWrite(enable_right_motor, right_motor_slow_speed_pwm);
-   analogWrite(enable_left_motor, left_motor_slow_speed_pwm);
+   analogWrite(enable_right_motor, right_motor_base_pwm);
+   analogWrite(enable_left_motor, left_motor_base_pwm);
    //delay(125);            // Move 2 cms
 
    //time_started = millis();

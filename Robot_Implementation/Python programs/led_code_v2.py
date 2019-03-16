@@ -9,9 +9,9 @@ import time
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
 
-red_led_pin = 15
-green_led_pin = 19
-blue_led_pin = 21
+red_led_pin = 19
+green_led_pin = 15
+blue_led_pin = 13
 
 GPIO.setup(red_led_pin,  GPIO.OUT)
 GPIO.setup(green_led_pin, GPIO.OUT)
@@ -64,8 +64,7 @@ if __name__ == __main__:
 		turn_off_led()
     for i in ['R','G','B','Y']:
         turn_on_led(i)
-        while (led_on_time - time.time()) <= 1 :
-            pass
+        
         turn_off_led()
 
 

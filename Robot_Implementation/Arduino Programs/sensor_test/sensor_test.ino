@@ -20,11 +20,11 @@ void loop()
   /*  Black Line: "Greater than/equal to" sensor_threshold
    *  White Line: "Lesser than/equal to" sensor_threshold
    */
-  
+  Serial.print(570);
+  Serial.print(" ");
   Serial.print(left_sensor_value);
   Serial.print(" ");
   Serial.print(center_sensor_value);
   Serial.print(" ");
   Serial.println(right_sensor_value);
-  delay(500);
 }
