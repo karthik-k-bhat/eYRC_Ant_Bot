@@ -84,29 +84,9 @@ def detect_trash(path_to_image):
         else:
                 return 'W'
                 
+print(detect_trash("trash.jpg"))
 
 
-def bot_align(image):    #for aligning the bot after the color detection
-    kernel = np.ones((5, 5), np.uint8)
-    color_range=np.array([[0, 135, 135], [32, 255, 255]])
-    # convert the frame to HSV co-ordinates
-    frame = cv2.imread(image)
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    # mask -> to apply filter to the image based on color range
-    mask = cv2.inRange(hsv, color_range[0], color_range[1])
-    # erode -> to remove small blobs in the image
-    mask = cv2.erode(mask, kernel, iterations=1)
-    # dilate -> to sharpen the edges
-    mask = cv2.dilate(mask, kernel, iterations=1)
-    cv2.imshow("mask",mask)
-    cv2.waitKey(0)
-    # contours -> set of points which are in white
-    contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-    if contours:
-        # maximum area -> the ball
-        object = max(contours, key=len)
-        # calculating the x-center and y-center
-        (x, y) = ((max(object[:, :, 0])+min(object[:, :, 0]))//2, (max(object[:, :, 1])+min(object[:, :, 1]))//2) 
-    return (x-320)
+def bot_align():    #for aligning the bot after the color detection
     
-print(bot_align("trash.jpg"))
+    
