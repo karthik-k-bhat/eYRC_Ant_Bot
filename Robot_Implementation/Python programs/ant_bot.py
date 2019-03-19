@@ -101,12 +101,17 @@ rawCapture = PiRGBArray(camera, size=resolution)
 '''
 
 def run_bot():
+
     print("Running bot.")
     get_block_colours()
     print("Blocks scanned")
     get_sims()
 
-'''
+    service_list = create_all_services()
+    
+    for service in service_list:
+        execute_service(servie)
+ '''       
     for ant_hill in ant_hill_list:
         if(ant_hill['is_qah']):
             #print("QAH id:",ant_hill['ah_number'])
@@ -133,7 +138,6 @@ def get_block_colours():
     print("Getting block colors")
     global block_color_dict,camera,rawCapture
     camera.start_preview()
-    color_code = {"Red":1,"Green":2,"Blue":3}
     
     move_to_node(4)
     node_list = [-4,-3,-2]
@@ -204,7 +208,14 @@ def move(direction):
     else:
         bot_position = immediate_node[bot_position+16][int(bot_direction)]
     #print("Moving to position:",bot_position,"\n")
-    talk_to_arduino("M1")
+    ant_hill_nodes = [11,12,13,14]
+    if(bot_position in ant_hill_nodes):
+        talk_to_arduino("N")
+        talk_to_arduino("M1")
+        turn(180)
+        talk_to_arduino("O-10")
+    else:
+        talk_to_arduino("M1")
 
 '''
 * Function Name: turn
@@ -217,7 +228,7 @@ def move(direction):
 def turn(angle):
     if(int(angle) == 0):
         return
-    
+
     global bot_direction,turn_flag
     #print("Current bot direction:",bot_direction)
     bot_direction = (bot_direction + angle/90)%4
@@ -372,6 +383,78 @@ def id_to_ant_hill(id):
     ant_hill['service_1']  = int(self.binary_string[5,7],2)
     ant_hill['trash'] = int(self.binary_string[7])
     return ant_hill
+
+def create_all_services():
+    global ant_hill_list
+    block_services = []
+    trash_services = []
+    final_services = []
+
+    for ant_hill in ant_hill_list:
+        ant_hill_node = ant_hill['ah_number']+11
+        services = []
+        if(ant_hill['service_1']):
+            services.append((ant_hill_node,1,ant_hill['service_1']))
+        if(ant_hill['service_2']):
+            services.append((ant_hill_node,2,ant_hill['service_2']))
+        if(ant_hill['trash']):
+            services.append((ant_hill_node,3,None))
+
+        if(ant_hill['is_qah']):
+            final_services.extend(services)
+        else:
+            for service in services:
+                if(service[1] == 3):
+                    trash_services.append(service)
+                else:
+                    block_services.append(service)
+
+    while(block_services and trash_services):
+        if(not final_services or final_services[-1][1] == 3):
+            service = block_services.pop()
+            final_services.append(service)
+        else:
+            last_service = final_services[-1]
+            flag = 1
+            for service in trash_services:
+                if(service[0] == last_service[0]):
+                    trash_services.remove(service)
+                    final_services.append(service)
+                    flag = 0
+            if(flag):
+                present_node = final_services[-1][0]
+                opposite_nodes_list = [[11,14],[12,13]]
+                for nodes in opposite_nodes_list:
+                    if(present_node in nodes):
+                        opposite_node = sum(nodes) - present_node
+                flag = 1
+                for service in block_services:
+                    if(service[0] == opposite_node):
+                        flag = 0
+                if(flag):
+                    for service in trash_services:
+                        if(service[0] == opposite_node):
+                            trash_services.remove(service)
+                            final_services.,append(service)
+
+    final_services.extend(block_services)
+    final_services.extend(trash_services)
+    return final_services
+
+def execute_service(service):
+    if(service[1] == 3):
+        move_to_node(service(0))
+        
+
+    else:
+        #Supply block
+
+def right_service():
+    pass
+
+def left_service():
+    pass
+
 
 '''
 * Function Name: talk_to_arduino
