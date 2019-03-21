@@ -33,6 +33,8 @@ bot_position = -1
 bot_direction = NORTH
 ant_hill_list = []
 block_color_dict = {}
+trash_deposit = -1
+block_node_list = [[3,4,5],[6,7,8]]
 
 '''
 * arena_map : This is a representation of the complete eyantra arena. The nodes
@@ -105,25 +107,17 @@ def run_bot():
     print("Running bot.")
     get_block_colours()
     print("Blocks scanned")
+    print(block_color_dict)
     get_sims()
 
     service_list = create_all_services()
     
     for service in service_list:
         execute_service(servie)
- '''       
-    for ant_hill in ant_hill_list:
-        if(ant_hill['is_qah']):
-            #print("QAH id:",ant_hill['ah_number'])
-            service(ant_hill)
-            #print("Serviced QAH")
-            ant_hill_list.remove(ant_hill)
-            break
 
-    for ant_hill in ant_hill_list:
-        service(ant_hill)
-        #print("Serviced AH")
-'''
+    move_to_node(0)
+    move(2)
+    talk_to_arduino("B")
 
 '''
 * Function Name: get_block_colours()
@@ -136,30 +130,28 @@ def run_bot():
 
 def get_block_colours():
     print("Getting block colors")
-    global block_color_dict,camera,rawCapture
+    global block_color_dict,block_node_list,camera,rawCapture
     camera.start_preview()
     
     move_to_node(4)
-    node_list = [-4,-3,-2]
     for i in range(3):
         turn(-45)
         camera.capture("Block"+str(i+1)+".jpg")
 
         rawCapture.truncate(0)
         color = detection.detect_color("Block"+str(i+1)+".jpg",45)
-        block_color_dict[node_list[i]] = color
-        print("Block color:",color)
+        block_color_dict[block_node_list[0][2-i]] = color
+        #print("Block color:",color)
     turn(-45)
 
     move_to_node(7)
-    node_list = [-7,-6,-5]
     for i in range(3):
         turn(45)
         camera.capture("Block"+str(i+4)+".jpg")
         rawCapture.truncate(0)
         colour = detection.detect_color("Block"+str(i+4)+".jpg",45)
-        block_color_dict[node_list[i]] = color
-        print("Block color:",color)
+        block_color_dict[block_node_list[1][2-i]] = color
+        #print("Block color:",color)
     turn(45)
     camera.stop_preview()
 
@@ -277,94 +269,6 @@ def get_turn_angle(direction):
     return turn_angle*sign
 
 '''
-* Function Name: service
-* Input: ant_hill -> A dictionary containing the details of the ant_hill that has to be serviced
-* Output:
-* Logic: Checks the ant_hill for service requirements and provides them if required.
-*        Later checks for the trash and picks it up if present.
-*
-* Example Call: service(ant_hill)
-'''
-
-def service(ant_hill):
-    service_1_node = (-2*ant_hill['ah_number'])-8
-    service_2_node = (-2*ant_hill['ah_number'])-9
-    ant_hill_node = ant_hill['ah_number']+11
-    block_node = None
-
-    if(ant_hill['service_1']):
-        for node in block_color_dict:
-            if(block_color_dict[node]==ant_hill['service_1']):
-                block_node = node
-                node = None
-                move_to_node(block_node)
-                talk_to_arduino("P")
-                move_to_node(ant_hill_node)
-                talk_to_arduino("T180")
-                talk_to_arduino("O-20")
-                talk_to_arduino("L")
-                talk_to_arduino("O8")
-                talk_to_arduino("P")
-                break
-
-    if(ant_hill['service_2']):
-        for node in block_color_dict:
-            if(block_color_dict[node]==ant_hill['service_2']):
-                block_node = node
-                node = None
-                move_to_node(block_node)
-                talk_to_arduino("P")
-                move_to_node(ant_hill_node)
-                talk_to_arduino("T180")
-                talk_to_arduino("O-20")
-                talk_to_arduino("R")
-                talk_to_arduino("O8")
-                talk_to_arduino("P")
-                break
-
-    if(ant_hill['trash']):
-        move_to_node(ant_hill_node)
-        trash_node = None
-        if(ant_hill['service_1']):
-            trash_node = service_2_node
-        elif(ant_hill['service_2']):
-            trash_node = service_1_node
-        
-        if(trash_node==service_1_node):
-            talk_to_arduino("T180")
-            talk_to_arduino("O-20")
-            talk_to_arduino("L")
-            talk_to_arduino("O8")
-        elif(trash_node==service_2_node):
-            talk_to_arduino("T180")
-            talk_to_arduino("O-20")
-            talk_to_arduino("L")
-            talk_to_arduino("O8")
-        else:
-            talk_to_arduino("T180")
-            talk_to_arduino("O-20")
-            talk_to_arduino("L")
-            talk_to_arduino("O8")
-            camera.capture("Trash.jpg")
-            rawCapture.truncate(0)
-            result = detection.detect_color("Trash.jpg",45)
-            if(result == False):
-                talk_to_arduino("O-20")
-                talk_to_arduino("R")
-                talk_to_arduino("R")
-                talk_to_arduino("O8")
-
-        talk_to_arduino("P")
-        move_to_node(2)
-        if(first_trash_deposited == 0):
-            turn_angle = 30
-        else:
-            turn_angle = -30
-        turn(turn_angle)
-        talk_to_arduino("P")
-        turn(turn_angle)
-
-'''
 * Function Name: id_to_ant_hill
 * Input: id -> An interger detected from the SIMs
 * Output: ant_hill -> A dictionary having the ant hill information
@@ -394,44 +298,51 @@ def create_all_services():
         ant_hill_node = ant_hill['ah_number']+11
         services = []
         if(ant_hill['service_1']):
-            services.append((ant_hill_node,1,ant_hill['service_1']))
+            services.append((ant_hill_node,0,1,ant_hill['service_1']))
         if(ant_hill['service_2']):
-            services.append((ant_hill_node,2,ant_hill['service_2']))
+            services.append((ant_hill_node,0,2,ant_hill['service_2']))
         if(ant_hill['trash']):
-            services.append((ant_hill_node,3,None))
+            trash = None
+            if(ant_hill['service_1']):
+                trash = 2
+            elif(ant_hill['service_2']):
+                trash = 1
+            services.append((ant_hill_node,1,trash,None))
 
         if(ant_hill['is_qah']):
             final_services.extend(services)
         else:
             for service in services:
-                if(service[1] == 3):
+                if(service[1] == 1):
                     trash_services.append(service)
                 else:
                     block_services.append(service)
 
     while(block_services and trash_services):
-        if(not final_services or final_services[-1][1] == 3):
+        if(not final_services or final_services[-1][1] == 1):
             service = block_services.pop()
             final_services.append(service)
         else:
             last_service = final_services[-1]
-            flag = 1
+            flag1 = 1
             for service in trash_services:
                 if(service[0] == last_service[0]):
                     trash_services.remove(service)
                     final_services.append(service)
-                    flag = 0
-            if(flag):
+                    flag1 = 0
+                    break
+            if(flag1):
                 present_node = final_services[-1][0]
                 opposite_nodes_list = [[11,14],[12,13]]
                 for nodes in opposite_nodes_list:
                     if(present_node in nodes):
                         opposite_node = sum(nodes) - present_node
-                flag = 1
+                flag2 = 1
                 for service in block_services:
                     if(service[0] == opposite_node):
-                        flag = 0
-                if(flag):
+                        flag2 = 0
+                        break
+                if(flag2):
                     for service in trash_services:
                         if(service[0] == opposite_node):
                             trash_services.remove(service)
@@ -442,19 +353,85 @@ def create_all_services():
     return final_services
 
 def execute_service(service):
-    if(service[1] == 3):
+    if(service[1]):
         move_to_node(service(0))
-        
+        if(service[2] == 1):
+            pick_place('Right')
+        elif(service[2] == 2):
+            pick_place('Left')
+        else:
+            pick_place('Check')
+    deposit_trash(trash)
 
     else:
-        #Supply block
+        block_node = None
+        flag = 0
+        nodes_list = zip(*block_node_list)
+        for nodes in node_list:
+            for node in nodes:
+                if(block_color_dict[node] == service[3]):
+                    block_node = node
+                    flag = 1
+                    break
+            if(flag):
+                break
+        move_to_node(block_node)
+        angle = get_turn_angle(2)
+        turn(angle)
+        talk_to_arduino('O10')
+        talk_to_arduino('P')
+        turn(180)
+        talk_to_arduino('M1')
 
-def right_service():
-    pass
+        move_to_node(service[0])
+        if(service[2] == 1):
+            pick_place('Right')
+        else:
+            pick_place('Left')
 
-def left_service():
-    pass
 
+def pick_place(status):
+
+    global camera,rawCapture
+
+    if(status == 'Right'):
+        direction = 1
+    elif(status == 'Left'):
+        direction = -1
+    turn(direction*90)
+    talk_to_arduino('O10')
+    talk_to_arduino('P')
+    talk_to_arduino('O-10')
+    turn(direction*90*-1)
+
+    if(status == 'Check'):
+        turn(90)
+        camera.start_preview()
+        camera.capture("Trash.jpg")
+        rawCapture.truncate(0)
+        camera.stop_preview()
+
+        #Call trash detection function
+        
+        if(result):
+            talk_to_arduino('O10')
+            talk_to_arduino('P')
+            talk_to_arduino('O-10')
+            turn(-90)
+        else:
+            turn(-90)
+            pick_place('Left')
+
+def deposit_trash():
+    global trash_deposit
+
+    move_to_node(2)
+    turn(trash_deposit*30)
+    talk_to_arduino('P')
+    turn(-1*trash_deposit*30)
+    talk_to_arduino('O-10')
+    turn(-180)
+    trash_deposit *= -1
 
 '''
 * Function Name: talk_to_arduino
@@ -477,5 +454,5 @@ def talk_to_arduino(action):
                 print(response)
 
 if __name__ == "__main__":
-    time.sleep(2)
+    time.sleep(2) #Wait for arduino to initialise
     run_bot()
