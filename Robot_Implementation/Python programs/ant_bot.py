@@ -411,8 +411,8 @@ def pick_place(status):
         rawCapture.truncate(0)
         camera.stop_preview()
 
-        #Call trash detection function
-        
+        result = detection.detect_trash("Trash.jpg")
+
         if(result):
             talk_to_arduino('O10')
             talk_to_arduino('P')

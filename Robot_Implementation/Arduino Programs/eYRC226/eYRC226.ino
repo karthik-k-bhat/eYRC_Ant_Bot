@@ -28,8 +28,8 @@
 #define motor_speed_variation 150                  // Change in PWM value to account for change in direction for line correction
 
 // Pin numbers for Motor control with L298D
-#define forward_left_motor 7
-#define backward_left_motor 4
+#define forward_left_motor 4
+#define backward_left_motor 7
 #define enable_left_motor 5
 
 #define forward_right_motor 12
@@ -498,17 +498,17 @@ void set_robot_movement()
 {
    if (robot_movement_direction == 1)               // 1 -> Forward
    {
-      digitalWrite(forward_right_motor, HIGH);
-      digitalWrite(backward_right_motor, LOW);
-      digitalWrite(forward_left_motor, HIGH);
-      digitalWrite(backward_left_motor, LOW);
-   }
-   else if (robot_movement_direction == -1)         // -1 -> Backward
-   {
       digitalWrite(forward_right_motor, LOW);
       digitalWrite(backward_right_motor, HIGH);
       digitalWrite(forward_left_motor, LOW);
       digitalWrite(backward_left_motor, HIGH);
+   }
+   else if (robot_movement_direction == -1)         // -1 -> Backward
+   {
+      digitalWrite(forward_right_motor, HIGH);
+      digitalWrite(backward_right_motor, LOW);
+      digitalWrite(forward_left_motor, HIGH);
+      digitalWrite(backward_left_motor, LOW);
    }
    else if (robot_movement_direction == 2)          // 2 -> Clockwise (Right)
    {
