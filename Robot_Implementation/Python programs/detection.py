@@ -56,13 +56,25 @@ def detect_color(path_to_image):
         color_range=np.array([blue,green,red])
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv, color_range[0][0], color_range[0][1])
-        # erode -> to remove small blobs in the image
-        mask = cv2.erode(mask, kernel, iterations=1)
-        # dilate -> to sharpen the edges
-        mask = cv2.dilate(mask, kernel, iterations=1)
-        cv2.imshow("mask",mask)
-        cv2.waitKey(0)
+        object_areas=list()
+        for color in color_range:
+                mask = cv2.inRange(hsv, color[0], color[1])
+                # erode -> to remove small blobs in the image
+                mask = cv2.erode(mask, kernel, iterations=1)
+                # dilate -> to sharpen the edges
+                mask = cv2.dilate(mask, kernel, iterations=1)
+                cv2.imshow("mask",mask)
+                cv2.waitKey(0)
+                contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+
+                if(not contours):
+                        print("no contour for color",color)
+                        object_areas.append(0)
+                else:
+                        object_areas.append(len(max(contours, key=len)))
+        print(object_areas)
+        color_identified = object_areas.index(max(object_areas))
+        print(color_identified)
 detect_color("blue.jpg")
 
 def detect_sim_id(path_to_image):
@@ -118,5 +130,4 @@ def bot_align(image):    #for aligning the bot after the color detection
         object = max(contours, key=len)
         # calculating the x-center and y-center
         (x, y) = ((max(object[:, :, 0])+min(object[:, :, 0]))//2, (max(object[:, :, 1])+min(object[:, :, 1]))//2) 
-    return (cv.contourArea(cnt))
-print(bot_align("trash.jpg"))
+    return (x-320)
