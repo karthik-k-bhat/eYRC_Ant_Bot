@@ -4,7 +4,7 @@ import cv2.aruco as aruco
 from aruco_lib import *
 import os
 aruco_id = None
-
+"""
 def detect_color(path_to_image,angle):  # color detection function
     # taking 3 points from the image to get its bgr values
     # for 135 degrees  = [(150,160),(263,33),(370,155)]
@@ -31,21 +31,51 @@ def detect_color(path_to_image,angle):  # color detection function
 
     for i in px:        # looping through the rgb values list of 3 points in the image
         maxi= max(i)
+
         ind.append(i.index(maxi))   #getting the index of the max value in rgb
 
     if(ind.count(0)>42000):     #counting the no of Blue Green or Red value
             return "BLUE"
     if(ind.count(1)>42000):     #if one color found two or more times , print that color
-            
             return "GREEN"
     if(ind.count(2)>42000):
-            
             return "RED"
 
     #print(px)
     #print(ind)
     #cv2.waitKey(0)
     #cv2.destroyAllWindows()
+"""
+def detect_color(path_to_image):
+        frame = cv2.imread(path_to_image)
+        kernel = np.ones((5, 5), np.uint8)
+
+        blue =[[84, 166, 114],[169, 248, 245]]
+        green=[[65, 75, 49],[112, 147, 152]]
+        red = [[164, 157, 68],[255, 255, 255]]
+        color_range=np.array([blue,green,red])
+
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        object_areas=list()
+        for color in color_range:
+                mask = cv2.inRange(hsv, color[0], color[1])
+                # erode -> to remove small blobs in the image
+                mask = cv2.erode(mask, kernel, iterations=1)
+                # dilate -> to sharpen the edges
+                mask = cv2.dilate(mask, kernel, iterations=1)
+                cv2.imshow("mask",mask)
+                cv2.waitKey(0)
+                contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+
+                if(not contours):
+                        print("no contour for color",color)
+                        object_areas.append(0)
+                else:
+                        object_areas.append(len(max(contours, key=len)))
+        print(object_areas)
+        color_identified = object_areas.index(max(object_areas))
+        print(color_identified)
+detect_color("blue.jpg")
 
 def detect_sim_id(path_to_image):
     global aruco_id
