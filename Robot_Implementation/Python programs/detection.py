@@ -63,19 +63,27 @@ def detect_color(path_to_image):
                 mask = cv2.erode(mask, kernel, iterations=1)
                 # dilate -> to sharpen the edges
                 mask = cv2.dilate(mask, kernel, iterations=1)
-                cv2.imshow("mask",mask)
-                cv2.waitKey(0)
+                #cv2.imshow("mask",mask)
+                #cv2.waitKey(0)
                 contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
 
                 if(not contours):
-                        print("no contour for color",color)
+                        #print("no contour for color",color)
                         object_areas.append(0)
                 else:
                         object_areas.append(len(max(contours, key=len)))
-        print(object_areas)
+        #print(object_areas)
         color_identified = object_areas.index(max(object_areas))
-        print(color_identified)
-detect_color("blue.jpg")
+        if(max(object_areas > 60):
+            if(color_indentified == 0):
+                return "Blue"
+            if(color_indentified == 1):
+                return "Green"
+            if(color_indentified == 2):
+                return "Red"
+        return "None"
+        
+#print(detect_color("blue.jpg"))
 
 def detect_sim_id(path_to_image):
     global aruco_id
@@ -91,23 +99,27 @@ def detect_sim_id(path_to_image):
 #		print(i,detect_sim_id(str(i)+".png"))
 
 def detect_trash(path_to_image):
-        img= cv2.imread(path_to_image)
-        px = list()
-        count=0
-        px.clear()
-                             
-        px.append(list(img[184,110]))   #getting bgr values of that pixel and adding to list px
-        px.append(list(img[340,52]))
-        px.append(list(img[430,160]))
-        px.append(list(img[297,207]))
-        #print(px)
-        for i in px:
-                if((i[0]-i[2])>60 and (i[1]-i[2])>60):
-                        count=count+1
-        if(count>2):
-                return True
-        else:
-                return False
+    kernel = np.ones((5, 5), np.uint8)
+    color_range=np.array([[0, 135, 135], [32, 255, 255]])
+    # convert the frame to HSV co-ordinates
+    frame = cv2.imread(path_to_image)
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    # mask -> to apply filter to the image based on color range
+    mask = cv2.inRange(hsv, color_range[0], color_range[1])
+    # erode -> to remove small blobs in the image
+    mask = cv2.erode(mask, kernel, iterations=1)
+    # dilate -> to sharpen the edges
+    mask = cv2.dilate(mask, kernel, iterations=1)
+    cv2.imshow("mask",mask)
+    cv2.waitKey(0)
+    # contours -> set of points which are in white
+    contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+    if contours:
+        # maximum area -> the ball
+        object = max(contours, key=len)
+    if(len(object)>60):
+        return "Yellow"
+    return "None"
 
 def bot_align(image):    #for aligning the bot after the color detection
     kernel = np.ones((5, 5), np.uint8)

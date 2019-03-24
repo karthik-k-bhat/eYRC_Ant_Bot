@@ -92,7 +92,7 @@ camera = PiCamera()                       # To initialize the PiCamera
 camera.resolution = resolution            # set the resolution of the camera
 camera.framerate = 16                     # Set the frame rate
 rawCapture = PiRGBArray(camera, size=resolution) 
-
+camera.rotation = 270
 '''
 * Function Name: run_bot()
 * Input: None
@@ -105,11 +105,11 @@ rawCapture = PiRGBArray(camera, size=resolution)
 def run_bot():
 
     print("Running bot.")
+    get_sims()
     get_block_colours()
     print("Blocks scanned")
     print(block_color_dict)
-    get_sims()
-
+    '''
     service_list = create_all_services()
     
     for service in service_list:
@@ -118,7 +118,8 @@ def run_bot():
     move_to_node(0)
     move(2)
     talk_to_arduino("B")
-
+    '''
+    
 '''
 * Function Name: get_block_colours()
 * Input: None 
@@ -137,21 +138,24 @@ def get_block_colours():
     for i in range(3):
         turn(-45)
         camera.capture("Block"+str(i+1)+".jpg")
-
+        color = None
         rawCapture.truncate(0)
-        color = detection.detect_color("Block"+str(i+1)+".jpg",45)
+        color = detection.detect_color("Block"+str(i+1)+".jpg")
         block_color_dict[block_node_list[0][2-i]] = color
-        #print("Block color:",color)
+        print("Block color:",color)
+        print(block_node_list[0][2-i])
     turn(-45)
 
     move_to_node(7)
     for i in range(3):
         turn(45)
+        color = None
         camera.capture("Block"+str(i+4)+".jpg")
         rawCapture.truncate(0)
-        colour = detection.detect_color("Block"+str(i+4)+".jpg",45)
+        color = detection.detect_color("Block"+str(i+4)+".jpg")
         block_color_dict[block_node_list[1][2-i]] = color
-        #print("Block color:",color)
+        print("Block color:",color)
+        print(block_node_list[1][2-i])
     turn(45)
     camera.stop_preview()
 
@@ -170,10 +174,12 @@ def get_sims():
     move_to_node(1)
     camera.start_preview()
     for i in range(4):
+        id = None
         turn(45)
-        camera.capture("Sim"+str((i+1)%4)+".jpg")
-        rawCapture.truncate(0)
-        id = detection.detect_sim_id("./Sim"+str((i+1)%4)+".jpg")
+        while(id is None):
+            camera.capture("Sim"+str((i+1)%4)+".jpg")
+            rawCapture.truncate(0)
+            id = detection.detect_sim_id("./Sim"+str((i+1)%4)+".jpg")
         print("ID Detected:",id)
         ant_hill = id_to_ant_hill(id)
         ant_hill_list.append(ant_hill)
@@ -279,13 +285,13 @@ def get_turn_angle(direction):
 
 def id_to_ant_hill(id):
     ant_hill = {'ah_number':None, 'is_qah':None, 'service_1':None, 'service_2':None, "trash":None}
-    binary_string = bin(id)
-    binary_string = '0'*(8-len(self.binary_string)) + self.binary_string #To add preceding zeros
+    binary_string = bin(id)[2:]
+    binary_string = '0'*(8-len(binary_string)) + binary_string #To add preceding zeros
     ant_hill['is_qah'] = int(binary_string[0],2)
-    ant_hill['ah_number'] = int(self.binary_string[1,3],2)
-    ant_hill['service_2'] = int(self.binary_string[3,5],2)
-    ant_hill['service_1']  = int(self.binary_string[5,7],2)
-    ant_hill['trash'] = int(self.binary_string[7])
+    ant_hill['ah_number'] = int(binary_string[1:3],2)
+    ant_hill['service_2'] = int(binary_string[3:5],2)
+    ant_hill['service_1']  = int(binary_string[5:7],2)
+    ant_hill['trash'] = int(binary_string[7])
     return ant_hill
 
 def create_all_services():
@@ -346,7 +352,7 @@ def create_all_services():
                     for service in trash_services:
                         if(service[0] == opposite_node):
                             trash_services.remove(service)
-                            final_services.,append(service)
+                            final_services.append(service)
 
     final_services.extend(block_services)
     final_services.extend(trash_services)
@@ -361,7 +367,7 @@ def execute_service(service):
             pick_place('Left')
         else:
             pick_place('Check')
-    deposit_trash(trash)
+        deposit_trash(trash)
 
     else:
         block_node = None
@@ -455,4 +461,5 @@ def talk_to_arduino(action):
 
 if __name__ == "__main__":
     time.sleep(2) #Wait for arduino to initialise
+    #talk_to_arduino("C")
     run_bot()
