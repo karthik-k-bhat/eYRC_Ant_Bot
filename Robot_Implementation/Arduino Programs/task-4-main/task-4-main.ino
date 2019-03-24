@@ -56,9 +56,9 @@ Servo camera_servo;
 
 
 // Global Variables Declaration
-int left_sensor_threshold = 570;                        // Threshold values for line sensor
-int center_sensor_threshold = 570;
-int right_sensor_threshold = 570;
+int left_sensor_threshold = 300;                        // Threshold values for line sensor
+int center_sensor_threshold = 300;
+int right_sensor_threshold = 300;
 
 /* To indicate the direction of movement for robot
  *  -2  Left direction
