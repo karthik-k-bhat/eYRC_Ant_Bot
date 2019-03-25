@@ -80,7 +80,7 @@ int left_motor_pwm;                          // Variable for differential pwm fo
 int right_motor_pwm;
 
 bool node_flag = 0;                          // 0 - No node detected, 1 - Node detected
-bool camera_position;                        // 0 - Downwards, 1 - Upwards
+//bool camera_position;                        // 0 - Downwards, 1 - Upwards
 bool pick_place_flag;                        // 0 - Pick Supply, 1 - Deliver supply
 bool job_done_flag = 0;                      // Flag to denote if a job was completed or not
 bool node_stop = 0;
@@ -111,14 +111,14 @@ void setup()
    /*  Initializing Pick and Place Mechanism
     *  Lift servo: 0 -> Up, 23 -> Down
     *  Grab servo: 0 -> Open, 180 -> Close
-    *  Camera servo: 70 -> Up 55 -> Down facing 
+    *  Camera servo: 40 -> Up 55 -> Down facing 
     */
    lift_servo.write(0);
    grabber_servo.write(0);
    pick_place_flag = 0;
 
-   camera_servo.write(70);
-   camera_position = 1;
+   camera_servo.write(40);
+   //camera_position = 1;
 }
 
 // Default arduino loop function - to keep executing the instructions indefintely
@@ -245,11 +245,11 @@ void loop()
      }
 
      // For Camera servo movements
-     else if (data == 'C')
+     /*else if (data == 'C')
      {
         if (camera_position)
         {
-           camera_servo.write(55);
+           camera_servo.write(40);
            camera_position = 0;
         }
         else
@@ -258,7 +258,7 @@ void loop()
            camera_position = 1;
         }
         job_done_flag = 1;
-     }
+     }*/
      
      // For a small distance movement of the bot (Front direction)
      else if (data == 'O')
