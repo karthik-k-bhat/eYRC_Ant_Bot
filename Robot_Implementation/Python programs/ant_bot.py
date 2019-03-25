@@ -1,6 +1,6 @@
 '''
 * Team Id : 226
-* Author List : Vishwas, 
+* Author List : Vishwas 
 * Filename: progress_task
 * Theme: Ant Bot
 * Functions: run_bot, get_sims,get_block_color move_to_node, move, turn, talk_to_arduino 
@@ -12,8 +12,10 @@
 import serial
 import detection
 import time
+import cv2
 from picamera import PiCamera
 from picamera.array import PiRGBArray
+import led
 
 # Initialising Globals
 
@@ -35,6 +37,7 @@ ant_hill_list = []
 block_color_dict = {}
 trash_deposit = -1
 block_node_list = [[3,4,5],[6,7,8]]
+number_of_nodes = 0
 
 '''
 * arena_map : This is a representation of the complete eyantra arena. The nodes
@@ -109,20 +112,20 @@ def run_bot():
     get_block_colours()
     print("Blocks scanned")
     print(block_color_dict)
-    '''
+
     service_list = create_all_services()
-    
+    print("Services created.")
     for service in service_list:
-        execute_service(servie)
+        print("Executing:",service)
+        execute_service(service)
 
     move_to_node(0)
     move(2)
     talk_to_arduino("B")
-    '''
-    
+
 '''
 * Function Name: get_block_colours()
-* Input: None 
+* Input: None
 * Output: None
 * Logic: Go to both sides of the service areas and scan the block colors
 *
@@ -143,7 +146,7 @@ def get_block_colours():
         color = detection.detect_color("Block"+str(i+1)+".jpg")
         block_color_dict[block_node_list[0][2-i]] = color
         print("Block color:",color)
-        print(block_node_list[0][2-i])
+        #print(block_node_list[0][2-i])
     turn(-45)
 
     move_to_node(7)
@@ -155,7 +158,7 @@ def get_block_colours():
         color = detection.detect_color("Block"+str(i+4)+".jpg")
         block_color_dict[block_node_list[1][2-i]] = color
         print("Block color:",color)
-        print(block_node_list[1][2-i])
+        #print(block_node_list[1][2-i])
     turn(45)
     camera.stop_preview()
 
@@ -168,9 +171,9 @@ def get_block_colours():
 * Example Call: get_sims()
 '''
 def get_sims():
-    
-    global ant_hill_list,camera,rawCapture
 
+    global ant_hill_list,camera,rawCapture
+    '''
     move_to_node(1)
     camera.start_preview()
     for i in range(4):
@@ -184,7 +187,13 @@ def get_sims():
         ant_hill = id_to_ant_hill(id)
         ant_hill_list.append(ant_hill)
         turn(45)
+    turn(90)
+    turn(90)
     camera.stop_preview()
+    '''
+    for id in [145,35,78,118]:
+        ant_hill = id_to_ant_hill(id)
+        ant_hill_list.append(ant_hill)
 
 '''
 * Function Name: move()
@@ -196,10 +205,10 @@ def get_sims():
 '''
 def move(direction):
     global bot_direction,bot_position,immediate_node
-    
+
     turn_angle = get_turn_angle(direction)
     turn(turn_angle)
-    
+
     #print("Current bot position:",bot_position)
     if(bot_position<0):
         bot_position = immediate_node[bot_position+16]
@@ -210,8 +219,10 @@ def move(direction):
     if(bot_position in ant_hill_nodes):
         talk_to_arduino("N")
         talk_to_arduino("M1")
-        turn(180)
-        talk_to_arduino("O-10")
+        turn(45)
+        turn(90)
+        bot_direction = (bot_direction+0.5)%4
+        talk_to_arduino("O-13")
     else:
         talk_to_arduino("M1")
 
@@ -232,12 +243,11 @@ def turn(angle):
     bot_direction = (bot_direction + angle/90)%4
     #print("Turning to direction:",bot_direction)
     if(angle == 90):
-        talk_to_arduino("R") #Uses line sensing and hence more efficient.    
+        talk_to_arduino("R") #Uses line sensing and hence more efficient.
     elif angle == -90:
         talk_to_arduino("L")
     else:
         talk_to_arduino("T"+str(angle))
-        
 
 '''
 * Function Name: move_to_node
@@ -249,6 +259,10 @@ def turn(angle):
 '''
 def move_to_node(node):
     global bot_position, arena_map
+
+    if(node is None):
+        print("Can't move to None node.")
+        return
 
     while bot_position != node:
         if(bot_position<0):
@@ -270,9 +284,10 @@ def move_to_node(node):
 def get_turn_angle(direction):
     global bot_direction
 
-    turn_angle = min((bot_direction-direction)%4,(direction-bot_direction)%4)*90
-    sign = -1 if bot_direction+2<direction else 1
-    return turn_angle*sign
+    if((bot_direction-direction)%4 < (direction-bot_direction)%4):
+        return -90*((bot_direction-direction)%4)
+    else:
+        return 90*((direction-bot_direction)%4)
 
 '''
 * Function Name: id_to_ant_hill
@@ -300,6 +315,8 @@ def create_all_services():
     trash_services = []
     final_services = []
 
+    print("Starting")
+
     for ant_hill in ant_hill_list:
         ant_hill_node = ant_hill['ah_number']+11
         services = []
@@ -323,6 +340,8 @@ def create_all_services():
                     trash_services.append(service)
                 else:
                     block_services.append(service)
+
+    print("Optimising")
 
     while(block_services and trash_services):
         if(not final_services or final_services[-1][1] == 1):
@@ -353,41 +372,53 @@ def create_all_services():
                         if(service[0] == opposite_node):
                             trash_services.remove(service)
                             final_services.append(service)
+            if(last_service == final_services[-1]):
+                service = block_services.pop()
+                final_services.append(service)
 
     final_services.extend(block_services)
     final_services.extend(trash_services)
+
     return final_services
+
 
 def execute_service(service):
     if(service[1]):
-        move_to_node(service(0))
+        print("Current direction:",bot_direction)
+        move_to_node(service[0])
         if(service[2] == 1):
             pick_place('Right')
         elif(service[2] == 2):
             pick_place('Left')
         else:
             pick_place('Check')
-        deposit_trash(trash)
+        deposit_trash()
 
     else:
         block_node = None
         flag = 0
         nodes_list = zip(*block_node_list)
-        for nodes in node_list:
-            for node in nodes:
+        for nodes in nodes_list:
+            for node in nodes[::-1]:
                 if(block_color_dict[node] == service[3]):
                     block_node = node
                     flag = 1
                     break
             if(flag):
                 break
+        block_color_dict[block_node] = 0
+        #print("Block found in node:",block_node)
+        #print("Present position:",bot_position)
+        #print("Present direction:",bot_direction)
         move_to_node(block_node)
         angle = get_turn_angle(2)
+        #print(angle)
         turn(angle)
         talk_to_arduino('O10')
+        led.turn_on_led(service[3])
+        led.turn_off_led()
         talk_to_arduino('P')
-        turn(180)
-        talk_to_arduino('M1')
+        talk_to_arduino('O-14')
 
         move_to_node(service[0])
         if(service[2] == 1):
@@ -399,16 +430,7 @@ def execute_service(service):
 def pick_place(status):
 
     global camera,rawCapture
-
-    if(status == 'Right'):
-        direction = 1
-    elif(status == 'Left'):
-        direction = -1
-    turn(direction*90)
-    talk_to_arduino('O10')
-    talk_to_arduino('P')
-    talk_to_arduino('O-10')
-    turn(direction*90*-1)
+    direction = 0
 
     if(status == 'Check'):
         turn(90)
@@ -420,37 +442,73 @@ def pick_place(status):
         result = detection.detect_trash("Trash.jpg")
 
         if(result):
-            talk_to_arduino('O10')
+            talk_to_arduino('O8')
+            led.turn_on_led(4)
+            led.turn_off_led()
             talk_to_arduino('P')
-            talk_to_arduino('O-10')
+            talk_to_arduino('O-12')
             turn(-90)
         else:
             turn(-90)
+            turn(-90)
+            talk_to_arduino('O8')
+            led.turn_on_led(4)
+            talk_to_arduino('P')
+            talk_to_arduino('O-12')
             pick_place('Left')
+        return
+    
+    if(status == 'Right'):
+        direction = 1
+    elif(status == 'Left'):
+        direction = -1
+
+    turn(direction*90)
+    talk_to_arduino('O8')
+    talk_to_arduino('P')
+    talk_to_arduino('O-8')
+    turn(direction*90*-1)
 
 def deposit_trash():
-    global trash_deposit
+    global trash_deposit,bot_direction
 
     move_to_node(2)
     turn(trash_deposit*30)
     talk_to_arduino('P')
     turn(-1*trash_deposit*30)
-    talk_to_arduino('O-10')
-    turn(-180)
+    talk_to_arduino('O-30')
+    turn(90)
+    bot_direction = (bot_direction+1)%4
     trash_deposit *= -1
 
 '''
-* Function Name: talk_to_arduino
-* Input: action -> Message that has to be sent to arduino
-* Output: 
-* Logic: Sends the message to arduino and waits for a job done signal.
+* Function Name : talk_to_arduino
+* Input         : action -> Message that has to be sent to arduino
+* Output        : None
+* Logic         : a) Sends the message to arduino and waits for a job done signal.
+*                 b) Optimises multiple "M" commands for faster bot movement.
 *
 * Example Call: talk_to_arduino("M1")
 '''
 def talk_to_arduino(action):
-    global serial_communication
+
+    global serial_communication,number_of_nodes
+    
+    # This part of the code is to add up all the consecutive "M1" commands and send them at once.
+    # It increases the efficiency of line follower.
+    if(action == "M1"):
+        number_of_nodes += 1
+        return
+    else:
+        if(number_of_nodes):
+            serial_communication.write("M"+str(number_of_nodes).encode())
+            number_of_nodes = 0
+    
     print("Talking to arduino:",action)
+    # Send the encoded signal to Arduino through serial communication
     serial_communication.write(action.encode())
+    # Wait until a 'Job done' signal is returned.
+    # This helps while taking pictures and scanning Sims and Blocks.
     while(1):
         if(serial_communication.in_waiting>0):
             response = serial_communication.readline().decode().strip("\n").strip("\r")
@@ -460,6 +518,7 @@ def talk_to_arduino(action):
                 print(response)
 
 if __name__ == "__main__":
-    time.sleep(2) #Wait for arduino to initialise
-    #talk_to_arduino("C")
-    run_bot()
+    time.sleep(2)      # Wait for arduino to initialise
+    led.turn_off_led() # Turn off led before beginning the run
+    run_bot()          # Main function that runs the bot
+    led.end_led()      # Stop led after the run

@@ -27,22 +27,22 @@ blue_led.start(100)
 
 def turn_on_led(led_color):
     global red_led, green_led, blue_led
-    if led_color == 'R':
+    if led_color == 1:
         red_led.ChangeDutyCycle(0)
         green_led.ChangeDutyCycle(100)
         blue_led.ChangeDutyCycle(100)
 
-    elif led_color == 'G':
+    elif led_color == 2:
         red_led.ChangeDutyCycle(100)
         green_led.ChangeDutyCycle(0)
         blue_led.ChangeDutyCycle(100)
 
-    elif led_color == 'B':
+    elif led_color == 3:
         red_led.ChangeDutyCycle(100)
         green_led.ChangeDutyCycle(100)
         blue_led.ChangeDutyCycle(0)
 
-    elif led_color == 'Y':
+    elif led_color == 4:
         green_led.ChangeDutyCycle(0)
         red_led.ChangeDutyCycle(40)
         blue_led.ChangeDutyCycle(100)

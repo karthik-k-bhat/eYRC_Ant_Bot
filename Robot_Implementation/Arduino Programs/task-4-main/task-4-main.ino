@@ -22,8 +22,8 @@
 #define right_motor_base_pwm 250                   // Base pwm - Such that the robot goes in a straight line   
 #define left_motor_base_pwm 255
 
-#define left_motor_slow_speed_pwm 205              // PWM such that bot moves in a slower speed
-#define right_motor_slow_speed_pwm 150
+#define left_motor_slow_speed_pwm 200              // PWM such that bot moves in a slower speed
+#define right_motor_slow_speed_pwm 200
 
 #define motor_speed_variation 150                  // Change in PWM value to account for change in direction for line correction
 
@@ -37,9 +37,9 @@
 #define enable_right_motor 5//3
 
 // Parameters of the robot for movements
-#define length_of_shaft 26.5
-#define motor_rpm 100
-#define wheel_diameter 6.8
+#define length_of_shaft 24
+#define motor_rpm 93
+#define wheel_diameter 6.7
 #define sensor_wheel_distance 8
 
 // Pin numbers for Servo pins and buzzer
@@ -180,6 +180,7 @@ void loop()
         String i = Serial.readString();
         int angle = i.toInt();
 
+        float time_duration = (length_of_shaft*abs(angle))/(motor_rpm*6*wheel_diameter)*1000;
         // Set the direction
         if (angle >=0)
            robot_movement_direction = 2;
@@ -189,7 +190,6 @@ void loop()
 
         // Keep the motor running until the robot rotates the given angle
         // Formuala to caculate time delay in seconds = (angle_to_rotate * length_between_wheels)/(rpm_of_motor * 6 * diameter_of_wheel)
-        float time_duration = (length_of_shaft*abs(angle))/(motor_rpm*6*wheel_diameter)*1000;
         delay(time_duration);
 
         // Stop the motors and overcome the inertia
@@ -208,18 +208,18 @@ void loop()
         set_robot_movement();
 
         // Move for a small period to come out of the line
-        delay(100);
+        delay(300);
 
         // Loop until bot is on the line
         while(1)
         {
            // If turning right, stop when right sensor is on line
            // If turning left, stop when left sensor is on line
-           if ((data == 'L' && get_bot_position()== -1) || (data == 'R' && get_bot_position()== 1))
+           if (get_bot_position()== 0)
            {
+              cancel_inertia();
               robot_movement_direction=0;
               set_robot_movement();
-              cancel_inertia();
               break;
            }
         }
@@ -276,8 +276,8 @@ void loop()
         // Run the motor. (PWM is used to keep the bot move in straight line
         if (robot_movement_direction == 1)
         {
-           analogWrite(enable_left_motor, left_motor_base_pwm);
-           analogWrite(enable_right_motor, right_motor_base_pwm);
+           analogWrite(enable_left_motor, left_motor_slow_speed_pwm);
+           analogWrite(enable_right_motor, right_motor_slow_speed_pwm);
         }
         else if (robot_movement_direction == -1)
         {
@@ -721,7 +721,7 @@ void cancel_inertia()
    set_robot_movement();
    
    // Run the motors for a short time to cancel the inertia of rotation
-   delay(10);
+   delay(20);
    digitalWrite(enable_right_motor, HIGH);
    digitalWrite(enable_left_motor, HIGH);
    // Stop the motors.
@@ -779,6 +779,5 @@ void set_bot_on_line()
       left_motor_pwm -= motor_speed_variation;
    else if (robot_movement_direction == -1)
       left_motor_pwm += (motor_speed_variation/2);
-    return -1;
   }
 }
