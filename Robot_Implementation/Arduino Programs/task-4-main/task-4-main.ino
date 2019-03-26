@@ -19,28 +19,28 @@
 #define jump_threshold 100                         // Change in the value of Line sensor reading to determine the threshold
 
 // Motor parameter to control the speeds
-#define right_motor_base_pwm 250                   // Base pwm - Such that the robot goes in a straight line   
+#define right_motor_base_pwm 255                  // Base pwm - Such that the robot goes in a straight line   
 #define left_motor_base_pwm 255
 
-#define left_motor_slow_speed_pwm 200              // PWM such that bot moves in a slower speed
-#define right_motor_slow_speed_pwm 200
+#define left_motor_slow_speed_pwm 255             // PWM such that bot moves in a slower speed
+#define right_motor_slow_speed_pwm 255
 
 #define motor_speed_variation 150                  // Change in PWM value to account for change in direction for line correction
 
 // Pin numbers for Motor control with L298D
-#define forward_left_motor 2//7
-#define backward_left_motor 12//4
-#define enable_left_motor 3//5
+#define forward_left_motor 12     //7
+#define backward_left_motor 2   //4
+#define enable_left_motor 3      //5
 
-#define forward_right_motor 7//12
-#define backward_right_motor 4//2
-#define enable_right_motor 5//3
+#define forward_right_motor 4    //12
+#define backward_right_motor 7   //2
+#define enable_right_motor 5     //3
 
 // Parameters of the robot for movements
 #define length_of_shaft 24
-#define motor_rpm 93
+#define motor_rpm 84
 #define wheel_diameter 6.7
-#define sensor_wheel_distance 8
+#define sensor_wheel_distance 9
 
 // Pin numbers for Servo pins and buzzer
 #define grabber_servo_pin 6
@@ -213,9 +213,14 @@ void loop()
         // Loop until bot is on the line
         while(1)
         {
-           // If turning right, stop when right sensor is on line
-           // If turning left, stop when left sensor is on line
-           if (get_bot_position()== 0)
+           // If turning right, slow down when right sensor is on line
+           // If turning left, slow down when left sensor is on line
+           if (get_bot_position()== -1 || get_bot_position() == 1)
+           {
+              analogWrite(enable_right_motor, 160);
+              analogWrite(enable_left_motor, 160);
+           }
+           if (get_bot_position() == 0)
            {
               cancel_inertia();
               robot_movement_direction=0;
@@ -276,8 +281,8 @@ void loop()
         // Run the motor. (PWM is used to keep the bot move in straight line
         if (robot_movement_direction == 1)
         {
-           analogWrite(enable_left_motor, left_motor_slow_speed_pwm);
-           analogWrite(enable_right_motor, right_motor_slow_speed_pwm);
+           analogWrite(enable_left_motor, left_motor_base_pwm);
+           analogWrite(enable_right_motor, right_motor_base_pwm);
         }
         else if (robot_movement_direction == -1)
         {
@@ -721,7 +726,7 @@ void cancel_inertia()
    set_robot_movement();
    
    // Run the motors for a short time to cancel the inertia of rotation
-   delay(20);
+   delay(10);
    digitalWrite(enable_right_motor, HIGH);
    digitalWrite(enable_left_motor, HIGH);
    // Stop the motors.
