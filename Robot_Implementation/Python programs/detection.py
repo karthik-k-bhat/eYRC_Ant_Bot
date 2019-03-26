@@ -152,9 +152,12 @@ def detect_trash(path_to_image):
         return True
     return False
 
-def bot_align(image):    #for aligning the bot after the color detection
+def bot_align(image,color):    #for aligning the bot after the color detection
     kernel = np.ones((5, 5), np.uint8)
-    color_range=np.array([[0, 135, 135], [32, 255, 255]])
+    blue =[[84, 166, 114],[169, 248, 245]]
+    green=[[65, 75, 49],[112, 147, 152]]
+    red = [[164, 157, 68],[255, 255, 255]]
+    color_range=np.array(color)
     # convert the frame to HSV co-ordinates
     frame = cv2.imread(image)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -173,4 +176,10 @@ def bot_align(image):    #for aligning the bot after the color detection
         object = max(contours, key=len)
         # calculating the x-center and y-center
         (x, y) = ((max(object[:, :, 0])+min(object[:, :, 0]))//2, (max(object[:, :, 1])+min(object[:, :, 1]))//2) 
-    return (x-320)
+    if ((x-213) < 0 ):
+            return -1
+    elif (x-213 > 0 and x-416 <0):
+            return 0
+    elif (x-416>0):
+            return 1
+    
