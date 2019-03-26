@@ -85,6 +85,9 @@ bool pick_place_flag;                        // 0 - Pick Supply, 1 - Deliver sup
 bool job_done_flag = 0;                      // Flag to denote if a job was completed or not
 bool node_stop = 0;
 
+int lift_up = 0;
+int lift_down = 18;
+
 // Default arduino setup function - to run the code initially one time
 void setup()
 {
@@ -111,12 +114,12 @@ void setup()
    /*  Initializing Pick and Place Mechanism
     *  Lift servo: 0 -> Up, 23 -> Down
     *  Grab servo: 0 -> Open, 180 -> Close
-    *  Camera servo: 40 -> Up 55 -> Down facing 
     */
-   lift_servo.write(0);
+   lift_servo.write(lift_up);
    grabber_servo.write(0);
    pick_place_flag = 0;
 
+   //Camera servo: 40 
    camera_servo.write(40);
    //camera_position = 1;
 }
@@ -672,34 +675,54 @@ int get_bot_position()
  */
 void pick_place()
 {
+
    /*  Lift servo : 0 -> Up, 23 -> Down
     *  Grab servo : 0 -> Open, 180 -> Close
     */
    if (pick_place_flag)             // Deliver the supply
    {
       // Go down
-      lift_servo.write(23);
-      delay(500);
+      for(int i=lift_up; i<=lift_down; i++)
+      {
+         lift_servo.write(i);
+         delay(15);
+      }
+      delay(100);
       // Open the arm
       grabber_servo.write(0);
       delay(1000);
       // Go up
-      lift_servo.write(0);
-      delay(500);
+      for(int i=lift_down; i>=lift_up; i--)
+      {
+         lift_servo.write(0);
+         delay(15);
+      }
+      delay(100);
+      //delay(500);
       // No block lifted
       pick_place_flag = 0;
    }
    else                             // Pick the supply
    {
       // Go down
-      lift_servo.write(23);
-      delay(500);
+      for(int i=lift_up; i<=lift_down; i++)
+      {
+         lift_servo.write(i);
+         delay(15);
+      }
+      delay(100);
+      //delay(500);
       // Close the arm
       grabber_servo.write(180);
       delay(1000);
       // GO up
-      lift_servo.write(0);
-      delay(500);
+      for(int i=lift_down; i>=lift_up; i--)
+      {
+         lift_servo.write(0);
+         delay(15);
+      }
+      delay(100);
+      //delay(500);
       // Block lifted
       pick_place_flag = 1;
    }
