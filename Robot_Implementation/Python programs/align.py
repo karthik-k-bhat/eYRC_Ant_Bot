@@ -45,7 +45,7 @@ camera.rotation = 270
 camera.start_preview()
 camera.capture("align.jpg")
 rawCapture.truncate(0)
-print(bot_align("align.jpg"))
+#print(bot_align("align.jpg"))
 camera.stop_preview()
 
 cv2.destroyAllWindows()
