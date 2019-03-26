@@ -182,4 +182,3 @@ def bot_align(image,color):    #for aligning the bot after the color detection
             return 0
     elif (x-416>0):
             return 1
-    
