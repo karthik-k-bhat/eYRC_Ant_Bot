@@ -43,7 +43,8 @@ camera.rotation = 270
 
 
 camera.start_preview()
-camera.capture("align.jpg")
+name = input()
+camera.capture(name)
 rawCapture.truncate(0)
 #print(bot_align("align.jpg"))
 camera.stop_preview()

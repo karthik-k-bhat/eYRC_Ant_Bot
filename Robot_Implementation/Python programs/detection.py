@@ -97,7 +97,7 @@ def detect_sim_id(path_to_image):
         color_range=np.array([[0, 0, 0], [180, 250, 100]])
         # convert the frame to HSV co-ordinates
         frame = cv2.imread(path_to_image)
-        cv2.imshow("frame",frame)
+        #cv2.imshow("frame",frame)
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # mask -> to apply filter to the image based on color range
         mask = cv2.inRange(hsv, color_range[0], color_range[1])
@@ -172,10 +172,12 @@ def bot_align(image,color):    #for aligning the bot after the color detection
     mask = cv2.erode(mask, kernel, iterations=1)
     # dilate -> to sharpen the edges
     mask = cv2.dilate(mask, kernel, iterations=1)
-    cv2.imshow("mask",mask)
-    cv2.waitKey(0)
+    #cv2.imshow("mask",mask)
+    #cv2.waitKey(0)
     # contours -> set of points which are in white
     contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+    x=0
+    y=0
     if contours:
         # maximum area -> the ball
         object = max(contours, key=len)
