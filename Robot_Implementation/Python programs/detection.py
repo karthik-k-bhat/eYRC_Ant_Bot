@@ -90,8 +90,41 @@ def detect_sim_id(path_to_image):
     #print(det_aruco_list)
     if det_aruco_list:
         aruco_id = list(det_aruco_list.keys())[0] #taking only the id value
-        return aruco_id
-        
+        return (aruco_id,True)
+    else:
+        #to start detecting the shape of the arucoId and its corresponding center
+        kernel = np.ones((5, 5), np.uint8)
+        color_range=np.array([[0, 0, 0], [180, 250, 100]])
+        # convert the frame to HSV co-ordinates
+        frame = cv2.imread(path_to_image)
+        cv2.imshow("frame",frame)
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        # mask -> to apply filter to the image based on color range
+        mask = cv2.inRange(hsv, color_range[0], color_range[1])
+        # erode -> to remove small blobs in the image
+        mask = cv2.erode(mask, kernel, iterations=1)
+        # dilate -> to sharpen the edges
+        mask = cv2.dilate(mask, kernel, iterations=1)
+        contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+        object = max(contours, key=len)
+        # calculating the x-center and y-center
+        (x, y) = ((max(object[:, :, 0])+min(object[:, :, 0]))//2, (max(object[:, :, 1])+min(object[:, :, 1]))//2) 
+        #print(x,y)
+        if(x<=213):
+            print("arucoid left")
+            return (-1,False)
+        elif(x>213 and x<416 ):
+            print("arucoid center")
+            return (0,False)
+        elif(x>=416):
+            print("arucoid right")
+            return (1,False)
+        # cv2.imshow("mask",mask)
+        # cv2.waitKey(0)
+
+print(detect_sim_id("align.jpg"))
+
+
 #for i in range(4):
 #		print(i,detect_sim_id(str(i)+".png"))
 
