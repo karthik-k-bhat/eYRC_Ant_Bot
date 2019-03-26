@@ -455,7 +455,6 @@ def pick_place(status):
             led.turn_on_led(4)
             talk_to_arduino('P')
             talk_to_arduino('O-12')
-            pick_place('Left')
         return
     
     if(status == 'Right'):

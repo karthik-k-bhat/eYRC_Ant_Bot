@@ -80,7 +80,7 @@ def detect_color(path_to_image):
             return color_identified+1
         return 0
         
-print(detect_color("align.jpg"))
+#print(detect_color("align.jpg"))
 
 def detect_sim_id(path_to_image):
     global aruco_id
@@ -111,18 +111,18 @@ def detect_sim_id(path_to_image):
         (x, y) = ((max(object[:, :, 0])+min(object[:, :, 0]))//2, (max(object[:, :, 1])+min(object[:, :, 1]))//2) 
         #print(x,y)
         if(x<=213):
-            print("arucoid left")
+#            print("arucoid left")
             return (-1,False)
         elif(x>213 and x<416 ):
-            print("arucoid center")
+#            print("arucoid center")
             return (0,False)
         elif(x>=416):
-            print("arucoid right")
+#            print("arucoid right")
             return (1,False)
         # cv2.imshow("mask",mask)
         # cv2.waitKey(0)
 
-print(detect_sim_id("align.jpg"))
+#print(detect_sim_id("align.jpg"))
 
 
 #for i in range(4):
@@ -144,13 +144,13 @@ def detect_trash(path_to_image):
     #cv2.waitKey(0)
     # contours -> set of points which are in white
     contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-    object = 0
+    object = []
     if contours:
         # maximum area -> the ball
         object = max(contours, key=len)
     if(len(object)>60):
-        return "True"
-    return "False"
+        return True
+    return False
 
 def bot_align(image):    #for aligning the bot after the color detection
     kernel = np.ones((5, 5), np.uint8)
