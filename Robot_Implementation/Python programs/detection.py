@@ -157,7 +157,12 @@ def bot_align(image,color):    #for aligning the bot after the color detection
     blue =[[84, 166, 114],[169, 248, 245]]
     green=[[65, 75, 49],[112, 147, 152]]
     red = [[164, 157, 68],[255, 255, 255]]
-    color_range=np.array(color)
+    if( color == 1):
+        color_range=np.array(red)
+    if( color == 2):
+        color_range=np.array(green)
+    if( color == 3):
+        color_range=np.array(blue)
     # convert the frame to HSV co-ordinates
     frame = cv2.imread(image)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
