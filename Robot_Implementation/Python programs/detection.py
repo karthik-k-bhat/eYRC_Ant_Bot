@@ -49,11 +49,12 @@ def detect_color(path_to_image,angle):  # color detection function
 def detect_color(path_to_image):
         frame = cv2.imread(path_to_image)
         kernel = np.ones((5, 5), np.uint8)
-
+        #cv2.imshow("frame",frame)
+        #cv2.waitKey(0)
         blue =[[84, 166, 114],[169, 248, 245]]
         green=[[65, 75, 49],[112, 147, 152]]
         red = [[164, 157, 68],[255, 255, 255]]
-        color_range=np.array([blue,green,red])
+        color_range=np.array([red,green,blue])
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         object_areas=list()
@@ -73,17 +74,13 @@ def detect_color(path_to_image):
                 else:
                         object_areas.append(len(max(contours, key=len)))
         #print(object_areas)
-        color_identified = object_areas.index(max(object_areas))
-        if(max(object_areas > 60)):
-            if(color_identified == 0):
-                return "Blue"
-            if(color_identified == 1):
-                return "Green"
-            if(color_identified == 2):
-                return "Red"
-        return "None"
         
-#print(detect_color("blue.jpg"))
+        color_identified = object_areas.index(max(object_areas))
+        if(max(object_areas) > 30):
+            return color_identified+1
+        return 0
+        
+print(detect_color("align.jpg"))
 
 def detect_sim_id(path_to_image):
     global aruco_id
@@ -143,16 +140,17 @@ def detect_trash(path_to_image):
     mask = cv2.erode(mask, kernel, iterations=1)
     # dilate -> to sharpen the edges
     mask = cv2.dilate(mask, kernel, iterations=1)
-    cv2.imshow("mask",mask)
-    cv2.waitKey(0)
+    #cv2.imshow("mask",mask)
+    #cv2.waitKey(0)
     # contours -> set of points which are in white
     contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+    object = 0
     if contours:
         # maximum area -> the ball
         object = max(contours, key=len)
     if(len(object)>60):
-        return "Yellow"
-    return "None"
+        return "True"
+    return "False"
 
 def bot_align(image):    #for aligning the bot after the color detection
     kernel = np.ones((5, 5), np.uint8)
