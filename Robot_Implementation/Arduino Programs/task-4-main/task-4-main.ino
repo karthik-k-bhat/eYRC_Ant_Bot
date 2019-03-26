@@ -28,26 +28,26 @@
 #define motor_speed_variation 150                  // Change in PWM value to account for change in direction for line correction
 
 // Pin numbers for Motor control with L298D
-#define forward_left_motor 12     //7
-#define backward_left_motor 2   //4
-#define enable_left_motor 3      //5
+#define forward_left_motor 7     //7
+#define backward_left_motor 8   //4
+#define enable_left_motor 6      //5
 
-#define forward_right_motor 4    //12
-#define backward_right_motor 7   //2
-#define enable_right_motor 5     //3
+#define forward_right_motor 2    //12
+#define backward_right_motor 4   //2
+#define enable_right_motor 3     //3
 
 // Parameters of the robot for movements
-#define length_of_shaft 24
-#define motor_rpm 84
+#define length_of_shaft 27
+#define motor_rpm 100
 #define wheel_diameter 6.7
 #define sensor_wheel_distance 9
 
 // Pin numbers for Servo pins and buzzer
-#define grabber_servo_pin 6
+#define grabber_servo_pin 10
 #define lift_servo_pin 9
-#define camera_servo_pin 10
+#define camera_servo_pin 11
 
-#define buzzer 8
+#define buzzer 12
 
 // Instances for servo motors
 Servo grabber_servo;
@@ -86,7 +86,7 @@ bool job_done_flag = 0;                      // Flag to denote if a job was comp
 bool node_stop = 0;
 
 int lift_up = 0;
-int lift_down = 18;
+int lift_down = 25;
 
 // Default arduino setup function - to run the code initially one time
 void setup()
@@ -687,22 +687,14 @@ void pick_place()
    if (pick_place_flag)             // Deliver the supply
    {
       // Go down
-      for(int i=lift_up; i<=lift_down; i++)
-      {
-         lift_servo.write(i);
-         delay(15);
-      }
-      delay(100);
+      lift_servo.write(lift_down);
+      delay(600);
       // Open the arm
       grabber_servo.write(0);
       delay(1000);
       // Go up
-      for(int i=lift_down; i>=lift_up; i--)
-      {
-         lift_servo.write(0);
-         delay(15);
-      }
-      delay(100);
+      lift_servo.write(lift_up);
+      delay(600);
       //delay(500);
       // No block lifted
       pick_place_flag = 0;
@@ -710,24 +702,15 @@ void pick_place()
    else                             // Pick the supply
    {
       // Go down
-      for(int i=lift_up; i<=lift_down; i++)
-      {
-         lift_servo.write(i);
-         delay(15);
-      }
-      delay(100);
+      lift_servo.write(lift_down);
+      delay(600);
       //delay(500);
       // Close the arm
       grabber_servo.write(180);
       delay(1000);
       // GO up
-      for(int i=lift_down; i>=lift_up; i--)
-      {
-         lift_servo.write(0);
-         delay(15);
-      }
-      delay(100);
-      //delay(500);
+      lift_servo.write(lift_up);
+      delay(600);
       // Block lifted
       pick_place_flag = 1;
    }
