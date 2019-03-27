@@ -5,6 +5,7 @@ from aruco_lib import *
 import os
 aruco_id = None
 """
+
 def detect_color(path_to_image,angle):  # color detection function
     # taking 3 points from the image to get its bgr values
     # for 135 degrees  = [(150,160),(263,33),(370,155)]
@@ -111,13 +112,15 @@ def detect_sim_id(path_to_image):
         (x, y) = ((max(object[:, :, 0])+min(object[:, :, 0]))//2, (max(object[:, :, 1])+min(object[:, :, 1]))//2) 
         #print(x,y)
         if(x<=213):
-            print("arucoid left")
+            #print("arucoid left")
+            if(x<=90):
+                return (-3,False)
             return (-1,False)
         elif(x>213 and x<416 ):
-            print("arucoid center")
+            #print("arucoid center")
             return (0,False)
         elif(x>=416):
-            print("arucoid right")
+            #print("arucoid right")
             return (1,False)
         # cv2.imshow("mask",mask)
         # cv2.waitKey(0)
@@ -172,8 +175,8 @@ def bot_align(image,color):    #for aligning the bot after the color detection
     mask = cv2.erode(mask, kernel, iterations=1)
     # dilate -> to sharpen the edges
     mask = cv2.dilate(mask, kernel, iterations=1)
-    cv2.imshow("mask",mask)
-    cv2.waitKey(0)
+    #cv2.imshow("mask",mask)
+    #cv2.waitKey(0)
     # contours -> set of points which are in white
     contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
     if contours:
@@ -187,4 +190,3 @@ def bot_align(image,color):    #for aligning the bot after the color detection
             return 0
     elif (x-416>0):
             return 1
-    
