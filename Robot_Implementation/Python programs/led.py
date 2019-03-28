@@ -63,10 +63,11 @@ def end_led():
 if __name__ == "__main__":
 
     time.sleep(1)
-    for i in ['R','G','B','Y']:
+    for i in range(1,5):
         turn_off_led()
         time.sleep(1)
         print(i)
         turn_on_led(i)
     end_led()
     GPIO.cleanup()
+
