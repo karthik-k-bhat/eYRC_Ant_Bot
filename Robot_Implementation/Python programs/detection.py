@@ -172,9 +172,9 @@ def bot_align(image,color):    #for aligning the bot after the color detection
     #cv2.imshow("hsv",hsv)
     # mask -> to apply filter to the image based on color range
     mask = cv2.inRange(hsv, color_range[0],color_range[1])
-    cv2.imshow("mask",mask)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+#    cv2.imshow("mask",mask)
+#    cv2.waitKey(0)
+#    cv2.destroyAllWindows()
     # erode -> to remove small blobs in the image
     mask = cv2.erode(mask, kernel, iterations=1)
     # dilate -> to sharpen the edges
@@ -193,4 +193,4 @@ def bot_align(image,color):    #for aligning the bot after the color detection
     elif (x-416>0):
             return 1
 
-bot_align("B1.jpg",3)
+#bot_align("B1.jpg",3)

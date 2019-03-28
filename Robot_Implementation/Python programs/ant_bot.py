@@ -1,6 +1,6 @@
 '''
 * Team Id : 226
-* Author List : Vishwas 
+* Author List : Vishwas
 * Filename: progress_task
 * Theme: Ant Bot
 * Functions: run_bot, get_sims,get_block_color move_to_node, move, turn, talk_to_arduino 
@@ -39,11 +39,14 @@ trash_deposit = -1
 block_node_list = [[3,4,5],[6,7,8]]
 number_of_nodes = 0
 
-block_forward = 8
-block_backward = -12
+block_forward = 11
+block_backward = -13
 ah_backward = -12
 service_forward = 8
-service_backward = -10
+service_backward = -11
+
+turn_flag = 0
+trash_angle = 30
 
 '''
 * arena_map : This is a representation of the complete eyantra arena. The nodes
@@ -262,6 +265,16 @@ def turn(angle):
         talk_to_arduino("R") #Uses line sensing and hence more efficient.
     elif angle == -90:
         talk_to_arduino("L")
+    elif (angle == 45 or angle == -45):
+        if(turn_flag):
+            if(angle == 45):
+                talk_to_arduino("R")
+            else:
+                talk_to_arduino("L")
+                turn_flag = (turn_flag+1)%2
+
+        else:
+            talk_to_arduino("T"+str(angle))            
     else:
         talk_to_arduino("T"+str(angle))
 
@@ -545,11 +558,87 @@ def talk_to_arduino(action):
             else:
                 print(response)
 
+def service_check():
+    #Go to corner node
+    talk_to_arduino("M1")
+    talk_to_arduino("M1")
+    talk_to_arduino("R")
+    talk_to_arduino("M1")
+    talk_to_arduino("M1")
+    talk_to_arduino("M1")
+    talk_to_arduino("R")
+
+    #Pick and go to node 0
+    talk_to_arduino("P1")
+    talk_to_arduino("O"+str(service_forward))
+    time.sleep(1)
+    talk_to_arduino("P2")
+    talk_to_arduino("O"+str(service_backward))
+    time.sleep(1)
+    talk_to_arduino("R")
+    talk_to_arduino("M1")
+    talk_to_arduino("M1")
+    talk_to_arduino("M1")
+    talk_to_arduino("R")
+
+    #Go to a corner service place
+    talk_to_arduino("M1")
+    talk_to_arduino("R")
+    talk_to_arduino("M1")
+    talk_to_arduino("R")
+    talk_to_arduino("N")
+    talk_to_arduino("M1")
+
+    #Turn and place block
+
+    talk_to_arduino("T90")
+    talk_to_arduino("R")
+    talk_to_arduino("O"+str(ah_backward))
+    time.sleep(1)
+    talk_to_arduino("R")
+    talk_to_arduino("O"+str(service_forward))
+    time.sleep(1)
+    talk_to_arduino("P3")
+    talk_to_arduino("O"+str(service_backward))
+    time.sleep(1)
+    talk_to_arduino("L")
+
+def trash_check():
+    #Go front and pick trash
+    talk_to_arduino("M1")
+    talk_to_arduino("N")
+    talk_to_arduino("M1")
+    talk_to_arduino("T90")
+    talk_to_arduino("R")
+    talk_to_arduino("O"+str(ah_backward))
+    talk_to_arduino("L")
+    talk_to_arduino("P1")
+    talk_to_arduino("O"+str(service_forward))
+    talk_to_arduino("P2")
+    talk_to_arduino("O"+str(service_backward))
+    talk_to_arduino("R")
+
+    #Go to trash_zone and place
+    talk_to_arduino("M1")
+    talk_to_arduino("R")
+    talk_to_arduino("M1")
+    talk_to_arduino("R")
+    talk_to_arduino("M1")
+    talk_to_arduino("T"+str(trash_angle))
+    talk_to_arduino("P3")
+    talk_to_arduino("T-"+str(trash_angle))
+    talk_to_arduino("O-20")
+    talk_to_arduino("R")
+    talk_to_arduino("M1")
+    talk_to_arduino("M1")
+
 if __name__ == "__main__":
     camera.start_preview()
     time.sleep(2)      # Wait for arduino to initialise
     led.turn_off_led() # Turn off led before beginning the run
-    talk_to_arduino("M1")
-    run_bot()          # Main function that runs the bot
+    #talk_to_arduino("M1")
+    #run_bot()          # Main function that runs the bot
+    #service_check()
+    trash_check()
     led.end_led()      # Stop led after the run
     camera.stop_preview()

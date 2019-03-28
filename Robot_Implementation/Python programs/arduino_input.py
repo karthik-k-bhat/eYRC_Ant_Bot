@@ -14,13 +14,10 @@ camera.rotation = 90
 
 serial_communication = serial.Serial('/dev/ttyUSB0',9600)
 
-def talk_to_arduino(action, value=None):
+def talk_to_arduino(action):
     global serial_communication
 
     serial_communication.write(action.encode())
-
-    if(value is not None):
-        serial_communication.write(value.encode())
 
     while(1):
         if(serial_communication.in_waiting>0):
@@ -32,22 +29,20 @@ def talk_to_arduino(action, value=None):
 
 if __name__ == "__main__":
     #Wait for pi to initialize
-    time.sleep(5)
-
+    camera.start_preview()
+    time.sleep(2)
     try:
         while(1):
-            s = input().split()
+            s = input().split()[0]
             if(s == "Photo"):
                 name = input("Enter photo name: ")
-                camera.start_preview()
-                time.sleep(1)
                 camera.capture(name+".jpg")
                 rawCapture.truncate(0)
-                camera.stop_preview()
                 print("Done")
                 continue
-            talk_to_arduino(*s)
+            talk_to_arduino(s)
 
     except KeyboardInterrupt:
         talk_to_arduino("X")
+        camera.stop_preview()
         print("Closing")
