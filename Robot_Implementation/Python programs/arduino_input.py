@@ -1,6 +1,16 @@
 
 import serial
 import time
+from picamera import PiCamera
+from picamera.array import PiRGBArray
+
+# Camera
+resolution = (640, 480)                   # resolution for the frame
+camera = PiCamera()                       # To initialize the PiCamera
+camera.resolution = resolution            # set the resolution of the camera
+camera.framerate = 16                     # Set the frame rate
+rawCapture = PiRGBArray(camera, size=resolution) 
+camera.rotation = 90
 
 serial_communication = serial.Serial('/dev/ttyUSB0',9600)
 
@@ -27,6 +37,15 @@ if __name__ == "__main__":
     try:
         while(1):
             s = input().split()
+            if(s == "Photo"):
+                name = input("Enter photo name: ")
+                camera.start_preview()
+                time.sleep(1)
+                camera.capture(name+".jpg")
+                rawCapture.truncate(0)
+                camera.stop_preview()
+                print("Done")
+                continue
             talk_to_arduino(*s)
 
     except KeyboardInterrupt:

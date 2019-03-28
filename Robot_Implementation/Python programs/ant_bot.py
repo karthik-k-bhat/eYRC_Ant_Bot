@@ -113,16 +113,16 @@ camera.rotation = 270
 
 def run_bot():
 
-    print("Running bot.")
+    #print("Running bot.")
     get_sims()
     get_block_colours()
-    print("Blocks scanned")
+    #print("Blocks scanned")
     print(block_color_dict)
 
     service_list = create_all_services()
-    print("Services created.")
+    #print("Services created.")
     for service in service_list:
-        print("Executing:",service)
+        #print("Executing:",service)
         execute_service(service)
 
     move_to_node(0)
@@ -141,8 +141,7 @@ def run_bot():
 def get_block_colours():
     print("Getting block colors")
     global block_color_dict,block_node_list,camera,rawCapture
-    camera.start_preview()
-    
+    time.sleep(1)
     move_to_node(4)
     for i in range(3):
         turn(-45)
@@ -150,6 +149,9 @@ def get_block_colours():
         color = None
         rawCapture.truncate(0)
         color = detection.detect_color("Block"+str(i+1)+".jpg")
+        if(color in [1,2,3]):
+            led.turn_on_led(color)
+            led.turn_off_led(color)
         block_color_dict[block_node_list[0][2-i]] = color
         print("Block color:",color)
         #print(block_node_list[0][2-i])
@@ -162,11 +164,13 @@ def get_block_colours():
         camera.capture("Block"+str(i+4)+".jpg")
         rawCapture.truncate(0)
         color = detection.detect_color("Block"+str(i+4)+".jpg")
+        if(color in [1,2,3]):
+            led.turn_on_led(color)
+            led.turn_off_led(color)
         block_color_dict[block_node_list[1][2-i]] = color
         print("Block color:",color)
         #print(block_node_list[1][2-i])
     turn(45)
-    camera.stop_preview()
 
 '''
 * Function Name: get_sims
@@ -181,7 +185,6 @@ def get_sims():
     global ant_hill_list,camera,rawCapture
 
     move_to_node(1)
-    camera.start_preview()
     for i in range(4):
         id = None
         turn(45)
@@ -192,13 +195,12 @@ def get_sims():
             if(status == False):
                 talk_to_arduino("T"+str(id*10))
                 id = None
-        print("ID Detected:",id)
+        print("ID Detected: #"+str(id))
         ant_hill = id_to_ant_hill(id)
         ant_hill_list.append(ant_hill)
         turn(45)
     turn(90)
     turn(90)
-    camera.stop_preview()
     '''
     for id in [145,35,78,118]:
         ant_hill = id_to_ant_hill(id)
@@ -355,7 +357,7 @@ def create_all_services():
                 else:
                     block_services.append(service)
 
-    print("Optimising")
+    #print("Optimising")
 
     while(block_services and trash_services):
         if(not final_services or final_services[-1][1] == 1):
@@ -427,18 +429,15 @@ def execute_service(service):
         angle = get_turn_angle(2)
         turn(angle)
 
-        camera.start_preview()
         camera.capture("align.jpg")
         rawCapture.truncate(0)
         angle = detection.bot_align("align.jpg",service[3])
         print("Align:",angle)
-        talk_to_arduino("T"+str(angle*10))
-        camera.stop_preview()
-
+        if(angle != 0):
+            talk_to_arduino("T"+str(angle*10))
+        talk_to_arduino("P1")
         talk_to_arduino('O'+str(block_forward))
-        led.turn_on_led(service[3])
-        led.turn_off_led()
-        talk_to_arduino('P')
+        talk_to_arduino('P2')
         talk_to_arduino('O'+str(block_backward))
 
         move_to_node(service[0])
@@ -455,27 +454,27 @@ def pick_place(status):
 
     if(status == 'Check'):
         turn(90)
-        camera.start_preview()
         camera.capture("Trash.jpg")
         rawCapture.truncate(0)
-        camera.stop_preview()
 
         result = detection.detect_trash("Trash.jpg")
 
         if(result):
-            talk_to_arduino('O'+str(service_forward))
             led.turn_on_led(4)
-            led.turn_off_led()
-            talk_to_arduino('P')
+            led.turn_off_led
+            talk_to_arduino("P1")
+            talk_to_arduino('O'+str(service_forward))
+            talk_to_arduino('P2')
             talk_to_arduino('O'+str(service_backward))
             turn(-90)
         else:
             turn(-90)
             turn(-90)
-            talk_to_arduino('O'+str(service_forward))
             led.turn_on_led(4)
             led.turn_off_led()
-            talk_to_arduino('P')
+            talk_to_arduino("P1")
+            talk_to_arduino('O'+str(service_forward))
+            talk_to_arduino('P2')
             talk_to_arduino('O'+str(service_backward))
         return
     
@@ -486,7 +485,7 @@ def pick_place(status):
 
     turn(direction*90)
     talk_to_arduino('O'+str(service_forward))
-    talk_to_arduino('P')
+    talk_to_arduino('P3')
     talk_to_arduino('O'+str(service_backward))
     turn(direction*90*-1)
 
@@ -495,7 +494,7 @@ def deposit_trash():
 
     move_to_node(2)
     turn(trash_deposit*30)
-    talk_to_arduino('P')
+    talk_to_arduino('P3')
     turn(-1*trash_deposit*30)
     talk_to_arduino('O-30')
     turn(90)
@@ -547,8 +546,10 @@ def talk_to_arduino(action):
                 print(response)
 
 if __name__ == "__main__":
+    camera.start_preview()
     time.sleep(2)      # Wait for arduino to initialise
     led.turn_off_led() # Turn off led before beginning the run
-    talk_to_arduino("O5")
+    talk_to_arduino("M1")
     run_bot()          # Main function that runs the bot
     led.end_led()      # Stop led after the run
+    camera.stop_preview()

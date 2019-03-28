@@ -158,26 +158,27 @@ def detect_trash(path_to_image):
 
 def bot_align(image,color):    #for aligning the bot after the color detection
     kernel = np.ones((5, 5), np.uint8)
-    blue =[[84, 166, 114],[169, 248, 245]]
-    green=[[65, 75, 49],[112, 147, 152]]
-    red = [[164, 157, 68],[255, 255, 255]]
-    if( color == 1):
-        color_range=np.array(red)
-    if( color == 2):
-        color_range=np.array(green)
-    if( color == 3):
-        color_range=np.array(blue)
+    blue =[[60, 33, 100],[128, 255, 198]]
+    green=[[30, 145, 59],[68, 255, 201]]
+    red = [[0, 99, 109],[255, 255, 255]]
+    yellow = [[],[]] #Fill in hsv values
+    color_list = [red,blue,green,yellow]
+    color_range = np.array(color_list[color-1])
+    #color_range = np.array([[30, 145, 59],[68, 255, 201]])    
     # convert the frame to HSV co-ordinates
     frame = cv2.imread(image)
+    #cv2.imshow("frame",frame)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    #cv2.imshow("hsv",hsv)
     # mask -> to apply filter to the image based on color range
-    mask = cv2.inRange(hsv, color_range[0], color_range[1])
+    mask = cv2.inRange(hsv, color_range[0],color_range[1])
+    cv2.imshow("mask",mask)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     # erode -> to remove small blobs in the image
     mask = cv2.erode(mask, kernel, iterations=1)
     # dilate -> to sharpen the edges
     mask = cv2.dilate(mask, kernel, iterations=1)
-    #cv2.imshow("mask",mask)
-    #cv2.waitKey(0)
     # contours -> set of points which are in white
     contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
     if contours:
@@ -185,9 +186,11 @@ def bot_align(image,color):    #for aligning the bot after the color detection
         object = max(contours, key=len)
         # calculating the x-center and y-center
         (x, y) = ((max(object[:, :, 0])+min(object[:, :, 0]))//2, (max(object[:, :, 1])+min(object[:, :, 1]))//2) 
-    if ((x-213) < 0 ):
+    if ((x-213) < 0):
             return -1
     elif (x-213 > 0 and x-416 <0):
             return 0
     elif (x-416>0):
             return 1
+
+bot_align("B1.jpg",3)
