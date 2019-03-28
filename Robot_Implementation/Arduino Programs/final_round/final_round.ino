@@ -172,6 +172,7 @@ void loop()
               }
            }
         }
+        get_bot_position();
         // Set job_done_flag
         job_done_flag = 1;
         node_flag = 0;
@@ -197,6 +198,7 @@ void loop()
 
         // Stop the motors and overcome the inertia
         cancel_inertia();
+        get_bot_position();
         job_done_flag = 1;
      }
 
@@ -231,6 +233,7 @@ void loop()
               break;
            }
         }
+        get_bot_position();
         job_done_flag = 1;
      }
 
@@ -301,6 +304,41 @@ void loop()
 
         // Stop the motors by cancelling the inertia
         cancel_inertia();
+        get_bot_position();
+        job_done_flag = 1;
+     }
+
+     else if (data == 'S')
+     {
+        // Message syntax - "O X" X being an integer value representing the time to move forward
+        String i = Serial.readString();
+        long int travel_time = i.toInt();
+        
+        robot_movement_direction = 1;
+        set_robot_movement();
+        long int motor_start_time = millis();
+        // Run the motor. (PWM is used to keep the bot move in straight line
+        while((millis()- motor_start_time) <= travel_time)
+        {
+           int error = get_bot_position();
+           if (Serial.available())
+           {
+              data = Serial.read();
+              // If it is 'X', stop the motors
+              if (data == 'X')
+              {
+                 robot_movement_direction = 0;
+                 set_robot_movement();
+                 break;
+              }
+           }
+           // Run motor at different speeds to align to the line
+           analogWrite(enable_left_motor, left_motor_pwm);
+           analogWrite(enable_right_motor, right_motor_pwm);           
+        }
+        // Stop the motors by cancelling the inertia
+        cancel_inertia();
+        get_bot_position();
         job_done_flag = 1;
      }
 
