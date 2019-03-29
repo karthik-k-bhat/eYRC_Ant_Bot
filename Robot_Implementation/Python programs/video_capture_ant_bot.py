@@ -428,11 +428,11 @@ def execute_service(service):
         print("Current direction:",bot_direction)
         move_to_node(service[0])
         if(service[2] == 1):
-            pick_place('Pick','Right')
+            pick_place('Right')
         elif(service[2] == 2):
-            pick_place('Pick','Left')
+            pick_place('Left')
         else:
-            pick_place('Pick','Check')
+            pick_place('Check')
         deposit_trash()
 
     else:
@@ -485,7 +485,7 @@ def pick_place(status):
 
         if(result):
             led.turn_on_led(4)
-            led.turn_off_led()
+            led.turn_off_led
             talk_to_arduino("P1")
             talk_to_arduino('S'+str(pick_forward))
             talk_to_arduino('P2')

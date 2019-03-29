@@ -9,9 +9,9 @@ import time
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
 
-red_led_pin = 19
-green_led_pin = 15
-blue_led_pin = 13
+red_led_pin = 15
+green_led_pin = 19
+blue_led_pin = 21
 
 GPIO.setup(red_led_pin,  GPIO.OUT)
 GPIO.setup(green_led_pin, GPIO.OUT)

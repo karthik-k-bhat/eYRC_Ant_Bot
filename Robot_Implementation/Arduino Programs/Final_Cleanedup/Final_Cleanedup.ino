@@ -1,0 +1,665 @@
+/*
+ * e-Yantra Robotics Competition
+ * Theme            : Antbot
+ * Team ID          : 226
+ * Authors          : Karthik K Bhat, Shreyas R, Vishwas N S
+ * File Name        : Final_Cleanedup.ino
+ * Functions        : 
+ * Global variables : 
+ */
+
+// Include the required Library Files
+#include <Servo.h>
+
+// Pin numbers for line sensors
+#define left_line_sensor A0
+#define center_line_sensor A2
+#define right_line_sensor A4
+#define jump_threshold 100                         // Change in the value of Line sensor reading to determine the threshold
+
+// Motor parameter to control the speeds
+#define right_motor_base_pwm 235                   // Base pwm - Such that the robot goes in a straight line   
+#define left_motor_base_pwm 255
+
+#define left_motor_slow_speed_pwm 180              // PWM such that bot moves in a slower speed
+#define right_motor_slow_speed_pwm 180
+
+#define motor_speed_variation 150                  // Change in PWM value to account for change in direction for line correction
+
+// Pin numbers for Motor control with L298D
+#define forward_left_motor 7     //7
+#define backward_left_motor 8    //4O
+#define enable_left_motor 6      //5
+
+#define forward_right_motor 2    //12
+#define backward_right_motor 4   //2
+#define enable_right_motor 3     //3
+
+// Parameters of the robot for movements
+#define length_of_shaft 27
+#define motor_rpm 93
+#define wheel_diameter 6.7
+#define sensor_wheel_distance 7.5
+
+// Pin numbers for Servo pins and buzzer
+#define grabber_servo_pin 10
+#define lift_servo_pin 9
+#define camera_servo_pin 11
+
+#define buzzer 12
+
+// Instances for servo motors
+Servo grabber_servo;
+Servo lift_servo;
+Servo camera_servo;
+
+
+// Global Variables Declaration
+int left_sensor_threshold = 300;                        // Threshold values for line sensor
+int center_sensor_threshold = 300;
+int right_sensor_threshold = 300;
+
+int lift_up = 0;
+int lift_down = 25;
+
+/* To indicate the direction of movement for robot
+ *  -2  Left direction
+ *  -1  Backward
+ *   0  Stop
+ *  +1  Forward
+ *  +2  Right direction
+ */
+int robot_movement_direction = 0;
+
+/* For robot orientation with respect to line
+ *  -1  Bot left of line
+ *   0  
+ *  +1  Bot right of line
+ */
+int bot_position;                            // To identify the last known position of the bot
+int node_count = 0;                          // To count the number of nodes in the path to stop
+int left_motor_pwm;                          // Variable for differential pwm for line correction
+int right_motor_pwm;
+
+bool node_flag = 0;                          // 0 - No node detected, 1 - Node detected
+//bool camera_position;                        // 0 - Downwards, 1 - Upwards
+bool pick_place_flag;                        // 0 - Pick Supply, 1 - Deliver supply
+bool job_done_flag = 0;                      // Flag to denote if a job was completed or not
+bool node_stop = 0;
+
+// Default arduino setup function - to run the code initially one time
+void setup()
+{
+   // For serial communication between Raspberry Pi and Arduino
+   Serial.begin(9600);
+   
+   // Declaring the input/output pins
+   pinMode(forward_right_motor, OUTPUT);
+   pinMode(backward_right_motor, OUTPUT);
+   pinMode(enable_right_motor, OUTPUT);
+   pinMode(forward_left_motor, OUTPUT);
+   pinMode(backward_left_motor, OUTPUT);
+   pinMode(enable_left_motor, OUTPUT);
+   pinMode(buzzer, OUTPUT);
+   pinMode(left_line_sensor, INPUT);
+   pinMode(center_line_sensor, INPUT);
+   pinMode(right_line_sensor, INPUT);
+   
+   // Declaring the servo pins in respective instance
+   grabber_servo.attach(grabber_servo_pin);
+   lift_servo.attach(lift_servo_pin);
+   camera_servo.attach(camera_servo_pin);
+
+   /*  Initializing Pick and Place Mechanism
+    *  Lift servo: 0 -> Up, 23 -> Down
+    *  Grab servo: 0 -> Open, 180 -> Close
+    */
+   lift_servo.write(lift_up);
+   grabber_servo.write(0);
+   pick_place_flag = 0;
+
+   //Camera servo: 40 
+   camera_servo.write(180);
+   //camera_position = 1;
+}
+
+// Default arduino loop function - to keep executing the instructions indefintely
+void loop()
+{
+   /* Serial Communnication instructions:
+    *  1. Move with respect to node using line sensor: 'M' followed by direction integer representing number of nodes to pass. Positive being front direction and negative being back.
+    *  2. Move with respect to time using line sensor: 'S' followed by the time to travel
+    *  3. Turn: 'T' followed by direction angle. Positive for clockwise (right-side), Negative for counter-clockwise (left-side)
+    *  4. Rotate: 'L' or 'R' - Turn with respect to the lines at fast speed. 'A' or 'D' - Turn with respect to line slowly.
+    *  5. Buzzer: 'B' - To turn on the buzzer for 5 seconds
+    *  6. Pick and Place mechanism: 'P' followed by an integer to denote the mechanism's state
+    *  7. Move a certain distance: 'O' followed by the distance. Positive is front, Negative is back 
+    *  8. Stop when just when Node is reached: 'N'
+    */
+   if (Serial.available())
+   {
+     // Read the data from Serial buffer.
+     char data = Serial.read();
+     if (data == 'M') // For linear movement of the bot
+     {
+        // Message syntax - "M X" X being an integer representing number of nodes to pass. Positive being front direction and negative being back.
+        String i = Serial.readString();
+        int number_of_nodes = i.toInt();
+
+        // Set robot direction to move.
+        robot_movement_direction = number_of_nodes/abs(number_of_nodes);
+        set_robot_movement();
+
+        // Clear the flags
+        node_flag = 0;
+        node_count = 0;
+        // Whenever the robot is on a line, move until the robot is on node.
+        while(movement(number_of_nodes))
+        {
+           // If any data is sent during movement, read 
+           if (Serial.available())
+           {
+              data = Serial.read();
+              // If it is 'X', stop the motors
+              if (data == 'X')
+              {
+                 robot_movement_direction = 0;
+                 set_robot_movement();
+                 bot_position = 0;
+                 break;
+              }
+           }
+        }
+        get_bot_position();
+        // Set job_done_flag
+        job_done_flag = 1;
+        node_flag = 0;
+     }
+     else if (data == 'S')
+     {
+        // Message syntax - "O X" X being an integer value representing the time to move forward
+        String i = Serial.readString();
+        long int travel_time = i.toInt();
+        
+        robot_movement_direction = 1;
+        set_robot_movement();
+        long int motor_start_time = millis();
+        
+        // Run the motor. (PWM is used to keep the bot move in straight line)
+        while((millis()- motor_start_time) <= travel_time)
+        {
+           int error = get_bot_position();
+           if (Serial.available())
+           {
+              data = Serial.read();
+              // If it is 'X', stop the motors
+              if (data == 'X')
+              {
+                 robot_movement_direction = 0;
+                 set_robot_movement();
+                 break;
+              }
+           }
+           // Run motor at different speeds to align to the line
+           analogWrite(enable_left_motor, left_motor_pwm);
+           analogWrite(enable_right_motor, right_motor_pwm);           
+        }
+        // Stop the motors by cancelling the inertia to reduce overshoot
+        cancel_inertia();
+        get_bot_position();
+        job_done_flag = 1;
+     }
+     
+     else if (data == 'T')
+     {
+        // Message syntax - "T X" X being an integer representing the angle to turn
+        String i = Serial.readString();
+        int angle = i.toInt();
+
+        float time_duration = (length_of_shaft*abs(angle))/(motor_rpm*6*wheel_diameter)*1000;
+        // Set the direction
+        if (angle >=0)
+           robot_movement_direction = 2;
+        else 
+           robot_movement_direction = -2;
+        set_robot_movement();
+
+        // Start the motors
+        digitalWrite(enable_right_motor, HIGH);
+        digitalWrite(enable_left_motor, HIGH);
+        
+        // Keep the motor running until the robot rotates the given angle
+        // Formuala to caculate time delay in seconds = (angle_to_rotate * length_between_wheels)/(rpm_of_motor * 6 * diameter_of_wheel)
+        delay(time_duration);
+
+        // Stop the motors and overcome the inertia
+        cancel_inertia();
+        get_bot_position();
+        job_done_flag = 1;
+     }
+
+     else if(data == 'L' || data == 'R' || data == 'A' || data == 'D')
+     {
+        if (data == 'L' || data == 'A')
+        {
+           // If 'L' or 'A', then movement direction is left (-2)
+           robot_movement_direction = -2;
+           set_robot_movement();
+        }
+        else
+        {
+           // If 'R' or 'D'  then movement direction is right (2)
+           robot_movement_direction = 2;
+           set_robot_movement();
+        }
+        
+        if (data == 'L' || data == 'R')
+        {
+           // Run motors at full speed
+           digitalWrite(enable_right_motor, HIGH);
+           digitalWrite(enable_left_motor, HIGH);
+           
+           // Move for a small period to come out of the line
+           delay(200);
+        }
+        else 
+        {
+           // Run motors at slower speed
+           analogWrite(enable_left_motor, left_motor_slow_speed_pwm);
+           analogWrite(enable_right_motor, right_motor_slow_speed_pwm);
+           
+           // Move for a small period to come out of the line
+           delay(300);
+        }
+
+        // Loop until bot is on the line
+        while(1)
+        {
+           if (get_bot_position() == 0)
+           {
+              // Call the cancel_inertia to reduce overshoot and stop robot movement
+              cancel_inertia();
+              break;
+           }
+        }
+        get_bot_position();
+        job_done_flag = 1;
+     }
+     
+     // To beep the buzzer
+     else if (data == 'B')
+     {
+        // Turn on the buzzer
+        digitalWrite(buzzer, HIGH);
+        // Wait for 5 seconds as per the rulebook
+        delay(5000);
+        digitalWrite(buzzer, LOW);
+        job_done_flag = 1;
+     }
+
+     // For Pick and Place mechanism
+     else if (data == 'P')
+     {
+        String i = Serial.readString();
+        int pick_place_code = i.toInt();
+        pick_place(pick_place_code);
+        job_done_flag = 1;
+     }
+     
+     // For a small distance movement of the bot (Front direction)
+     else if (data == 'O')
+     {
+        // Message syntax - "O X" X being an integer value representing the distance to move in centimeter
+        String i = Serial.readString();
+        int distance = i.toInt();
+
+        if (distance > 0)
+           robot_movement_direction = 1;
+        else
+           robot_movement_direction = -1;
+        set_robot_movement();
+        
+        // Run the motor. (PWM is used to keep the bot move in straight line)
+        if (robot_movement_direction == 1)
+        {
+           analogWrite(enable_left_motor, left_motor_base_pwm);
+           analogWrite(enable_right_motor, right_motor_base_pwm);
+        }
+        else if (robot_movement_direction == -1)
+        {
+           analogWrite(enable_left_motor, left_motor_slow_speed_pwm);
+           analogWrite(enable_right_motor, right_motor_slow_speed_pwm);
+        }
+
+        // Keep the motor running until the robot travels the given distance
+        // Formuala to caculate time delay in seconds = (distance_to_travel * 60)/(rpm_of_motor * pi * diameter_of_wheel)
+        delay((abs(distance)*60)/(motor_rpm*3.142*wheel_diameter)*1000);
+
+        // Stop the motors by cancelling the inertia
+        cancel_inertia();
+        get_bot_position();
+        job_done_flag = 1;
+     }
+
+     else if (data == 'N')
+     {
+        // Stop the bot just when node is reached. Set the corresponding flag to indicate the same
+        node_stop = 1;
+        job_done_flag = 1;
+     }
+  }
+   
+  // If job is done, send "Job done" signal to Pi
+  if(job_done_flag)
+  {
+     Serial.println("Job done");
+     // Clear the flag and wait for next command
+     job_done_flag = 0;  
+  }
+}
+
+/* 
+ *  Function Name : Movement
+ *  Input         : int number_of_nodes
+ *  Output        : bool value - 0 robot stopped, 1 robot moving
+ *  Logic         : 1. To check the robot position using line sensor
+ *                  2. If the bot is sensed to be on a line or on white space, keep moving front as per the calculated speed
+ *                  3. If a node is sensed, and node_flag was 0 then, increment the node count.
+ *                  4. If the node_stop is 1 and node_count was same as number_of_nodes, then stop the bot after going front, else just stop
+ *                  5. Return 1 if bot is moving, else return 0
+ *  Example Call  : movement()
+ */
+bool movement(int number_of_nodes)
+{
+   // To get the position of the bot
+   int error = get_bot_position();
+
+   // If on the line (-1/1) or white space (-3)
+   if(abs(error) == 1 or error == 0 or error == -3)
+   {
+      node_flag = 0;
+   }
+   // If a node is present (-2, 2, 3)
+   else if(abs(error) == 2 || error == 3)
+   {
+      // If there bot was on line and node was sensed, increment node_count
+      if(node_flag == 0)
+      {
+         node_flag = 1;
+         node_count ++;
+         if (node_count < number_of_nodes)
+         {
+            analogWrite(enable_left_motor, left_motor_base_pwm);
+            analogWrite(enable_right_motor, right_motor_base_pwm);
+            delay(150);
+         }
+      }
+      // If node_count = number_of_nodes, stop the bot
+      if(node_count == number_of_nodes)
+      {
+         // if node_stop was 0, then move front a bit (sensor_wheel_distance) 
+         if(node_stop == 0)
+         {
+            analogWrite(enable_left_motor, left_motor_base_pwm);
+            analogWrite(enable_right_motor, right_motor_base_pwm);
+            delay((abs(sensor_wheel_distance)*60)/(motor_rpm*3.142*wheel_diameter)*1000);
+         }
+         else
+         {
+            delay(200);
+         }
+         robot_movement_direction = 0;
+         set_robot_movement();
+         node_stop = 0;
+         return 0;
+      }
+   }
+   // Run motor at different speeds to align to the line
+   analogWrite(enable_left_motor, left_motor_pwm);
+   analogWrite(enable_right_motor, right_motor_pwm);
+   return 1;
+}
+
+/* 
+ *  Function Name : set_robot_movement
+ *  Input         : None
+ *  Output        : None
+ *  Logic         : 1. Set the directions for movement according the robot_movement_direction
+ *                            -2  Left direction
+ *                            -1  Backward
+ *                             0  Stop
+ *                            +1  Forward
+ *                            +2  Right direction
+ *                  2. For forward directon, motor forward pin to be HIGH and backward pin to be LOW
+ *                  3. For backward directon, motor forward pin to be LOW and backward pin to be HIGH
+ *                  4. For right directon, Left motor to go forward and right motor to go backward        
+ *                  5. For left directon, Left motor to go backward and right motor to go forward         
+ *                  6. To start the motor, make the enable pins high, or use analog write to run at different speeds using pwm.
+ *                  7. To stop the robot, make the enable pins low.
+ *  Example Call  : set_robot_movement()
+ */
+void set_robot_movement()
+{
+   if (robot_movement_direction == 1)               // 1 -> Forward
+   {
+      digitalWrite(forward_right_motor, HIGH);
+      digitalWrite(backward_right_motor, LOW);
+      digitalWrite(forward_left_motor, HIGH);
+      digitalWrite(backward_left_motor, LOW);
+   }
+   else if (robot_movement_direction == -1)         // -1 -> Backward
+   {
+      digitalWrite(forward_right_motor, LOW);
+      digitalWrite(backward_right_motor, HIGH);
+      digitalWrite(forward_left_motor, LOW);
+      digitalWrite(backward_left_motor, HIGH);
+   }
+   else if (robot_movement_direction == 2)          // 2 -> Clockwise (Right)
+   {
+      digitalWrite(forward_right_motor, LOW);
+      digitalWrite(backward_right_motor, HIGH);
+      digitalWrite(forward_left_motor, HIGH);
+      digitalWrite(backward_left_motor, LOW);
+   }
+   else if (robot_movement_direction == -2)         // -2 -> Counter-clockwise (Left)
+   {
+      digitalWrite(forward_right_motor, HIGH);
+      digitalWrite(backward_right_motor, LOW);
+      digitalWrite(forward_left_motor, LOW);
+      digitalWrite(backward_left_motor, HIGH);
+   }
+   else if (robot_movement_direction == 0)          // 0 -> Stop
+   {
+      // Set all the pins low
+      digitalWrite(forward_right_motor, LOW);
+      digitalWrite(backward_right_motor, LOW);
+      digitalWrite(forward_left_motor, LOW);
+      digitalWrite(backward_left_motor, LOW);
+   }
+}
+
+int get_bot_position()
+{
+   int left_sensor_value = analogRead(left_line_sensor);
+   int center_sensor_value = analogRead(center_line_sensor);
+   int right_sensor_value = analogRead(right_line_sensor);
+   /*  Black Line: "Greater than/equal to" sensor_threshold
+    *  White Line: "Lesser than/equal to" sensor_threshold
+    */ 
+
+  
+   /*  Left Sensor on White space
+    *  Center Sensor on White space
+    *  Right Sensor on Black
+    */
+   if (left_sensor_value <= left_sensor_threshold &&
+       center_sensor_value <= center_sensor_threshold &&
+       right_sensor_value >= right_sensor_threshold)
+   {
+      // RIGHT CONDITION;
+      bot_position = 1;
+      // Set the respective PWM values to follow the line
+      if (robot_movement_direction == 1)
+         // Right motor to run slowly while going front
+         right_motor_pwm = right_motor_base_pwm - motor_speed_variation;
+      else if (robot_movement_direction == -1)
+         // Left motor to run slowly while going back 
+         right_motor_pwm = right_motor_base_pwm + (motor_speed_variation/3);
+      return 1;
+   }
+
+   /*  Left Sensor on White space
+    *  Center Sensor on Black
+    *  Right Sensor on White space
+    */
+   else if (left_sensor_value <= left_sensor_threshold &&
+            center_sensor_value >= center_sensor_threshold &&
+            right_sensor_value <= right_sensor_threshold)
+   {
+      // STRAIGHT LINE CONDITION;
+      bot_position = 0;
+      left_motor_pwm = left_motor_base_pwm;
+      right_motor_pwm = right_motor_base_pwm;
+      return 0;
+   }
+
+   /*  Left Sensor on Black
+    *  Center Sensor on White space
+    *  Right Sensor on White space
+    */
+   else if (left_sensor_value >= left_sensor_threshold &&
+            center_sensor_value <= center_sensor_threshold &&
+            right_sensor_value <= right_sensor_threshold)
+   {
+      // LEFT CONDITION;
+      bot_position = -1;
+      // Set the respective PWM values to follow the line
+      if (robot_movement_direction == 1)
+         // Left motor to run slowly while going front
+         left_motor_pwm = left_motor_base_pwm - motor_speed_variation;
+      else if (robot_movement_direction == -1)
+         // Right motor to run slowly while going back
+         right_motor_pwm = right_motor_base_pwm - (motor_speed_variation/3);
+      return -1;
+   }
+
+   /*  Left Sensor on White space
+   *  Center Sensor on Black
+   *  Right Sensor on Black
+   */
+   else if (left_sensor_value <= left_sensor_threshold &&
+            center_sensor_value >= center_sensor_threshold &&
+            right_sensor_value >= right_sensor_threshold)
+   {
+      // RIGHT BRANCHED-NODE CONDITION;
+      return 2;
+   }
+
+   /*  Left Sensor on Black
+    *  Center Sensor on Black
+    *  Right Sensor on White space
+    */
+   else if (left_sensor_value >= left_sensor_threshold &&
+            center_sensor_value >= center_sensor_threshold &&
+            right_sensor_value <= right_sensor_threshold)
+   {
+      // LEFT BRANCHED-NODE CONDITION;
+      return -2;
+   }
+
+   /*  Left Sensor on Black
+    *  Center Sensor on Black
+    *  Right Sensor on Black
+    */
+   else if (left_sensor_value >= left_sensor_threshold &&
+            center_sensor_value >= center_sensor_threshold &&
+            right_sensor_value >= right_sensor_threshold)
+   {
+      // T-NODE CONDITION;
+      return 3;
+   }
+
+   /*  Left Sensor on White
+    *  Center Sensor on White
+    *  Right Sensor on White
+    */
+   else if (left_sensor_value <= left_sensor_threshold &&
+            center_sensor_value <= center_sensor_threshold &&
+            right_sensor_value <= right_sensor_threshold)
+   {
+      // WHITE SPACE CONDITION;
+      return -3;
+   }
+}
+
+/* 
+ *  Function Name : pick_place
+ *  Input         : integer - movement code
+ *                  1. Go down and Open the arm
+ *                  2. Close the arm and ift
+ *                  3. Gown down and open the arm
+ *  Output        : None
+ *  Logic         : Set the angle to the required servo as required 
+ *                  
+ *  Example Call  : movement()
+ */
+void pick_place(int code)
+{
+
+   /*  Lift servo : 0 -> Up, 23 -> Down
+    *  Grab servo : 0 -> Open, 180 -> Close
+    */
+   if (code == 1)                                 // Go down and Open the arm
+   {
+      // Open the arm
+      grabber_servo.write(0);
+      delay(600);
+      // Go down
+      lift_servo.write(lift_down);
+      delay(1000);
+   }
+   else if(code == 2)                             // Close the arm and ift
+   {
+      // Close arm
+      grabber_servo.write(180);
+      delay(1000);
+      // Go up
+      lift_servo.write(lift_up);
+      delay(600);
+   }
+   else if(code == 3)                             // Gown down, open arm and go up again
+   {
+      // Go down
+      lift_servo.write(lift_down);
+      delay(1000);
+      // Open arm
+      grabber_servo.write(0);
+      delay(1000);
+      // Go up
+      lift_servo.write(lift_up);
+      delay(1000);
+   }
+}
+
+/* 
+ *  Function Name : cancel_inertia
+ *  Input         : None
+ *  Output        : None
+ *  Logic         : When the robot is moving one direction, make the robot move in the opposite direction for very small time duration
+ *                  so that the inertia in the motor is nullified.
+ *  Example Call  : cancel_inertia()
+ */
+void cancel_inertia()
+{
+   // Set the direction of the robot in opposite direction
+   robot_movement_direction *= -1;
+   set_robot_movement();
+   
+   // Run the motors for a short time to cancel the inertia of rotation
+   delay(20);
+   digitalWrite(enable_right_motor, HIGH);
+   digitalWrite(enable_left_motor, HIGH);
+   // Stop the motors.
+   robot_movement_direction = 0;
+   set_robot_movement();
+}

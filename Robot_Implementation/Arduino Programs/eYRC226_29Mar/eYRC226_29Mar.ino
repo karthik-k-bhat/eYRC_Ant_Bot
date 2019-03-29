@@ -1,12 +1,10 @@
 /*
  * Team ID          : 226
- * Authors          : Karthik K Bhat, Vishwas N S, Shreyas R
- * File Name        : final_round.ino
+ * Authors          : Karthik K Bhat, Shreyas R, Vishwas N S
+ * File Name        : eYRC226_29Mar.ino
  * Theme            : Antbot
- * Functions        : movement, line_sensor_calibrate, set_robot_movement, get_bot_position, pick_place, cancel_inertia
- * Global variables : left_sensor_threshold, center_sensor_threshold, right_sensor_threshold,
- *                    robot_movement_direction, bot_position, node_count, left_motor_pwm, right_motor_pwm,
- *                    node_flag, camera_position, pick_place_flag, job_done_flag, white_space_stop, node_stop
+ * Functions        : 
+ * Global variables : 
  */
 
 // Include the required Library Files
@@ -19,17 +17,17 @@
 #define jump_threshold 100                         // Change in the value of Line sensor reading to determine the threshold
 
 // Motor parameter to control the speeds
-#define right_motor_base_pwm 235                  // Base pwm - Such that the robot goes in a straight line   
+#define right_motor_base_pwm 235                   // Base pwm - Such that the robot goes in a straight line   
 #define left_motor_base_pwm 255
 
-#define left_motor_slow_speed_pwm 180//255             // PWM such that bot moves in a slower speed
-#define right_motor_slow_speed_pwm 180//255
+#define left_motor_slow_speed_pwm 180              // PWM such that bot moves in a slower speed
+#define right_motor_slow_speed_pwm 180
 
 #define motor_speed_variation 150                  // Change in PWM value to account for change in direction for line correction
 
 // Pin numbers for Motor control with L298D
 #define forward_left_motor 7     //7
-#define backward_left_motor 8   //4O
+#define backward_left_motor 8    //4O
 #define enable_left_motor 6      //5
 
 #define forward_right_motor 2    //12
@@ -60,6 +58,9 @@ int left_sensor_threshold = 300;                        // Threshold values for 
 int center_sensor_threshold = 300;
 int right_sensor_threshold = 300;
 
+int lift_up = 0;
+int lift_down = 25;
+
 /* To indicate the direction of movement for robot
  *  -2  Left direction
  *  -1  Backward
@@ -84,9 +85,6 @@ bool node_flag = 0;                          // 0 - No node detected, 1 - Node d
 bool pick_place_flag;                        // 0 - Pick Supply, 1 - Deliver supply
 bool job_done_flag = 0;                      // Flag to denote if a job was completed or not
 bool node_stop = 0;
-
-int lift_up = 0;
-int lift_down = 25;
 
 // Default arduino setup function - to run the code initially one time
 void setup()
@@ -131,6 +129,7 @@ void loop()
     *  1. Move: 'M' followed by direction integer representing number of nodes to pass. Positive being front direction and negative being back.
     *  2. Turn: 'T' followed by direction angle. Positive for clockwise (right-side), Negative for counter-clockwise (left-side)
     *  3. Rotate: 'L' or 'R' - Turn with respect to the lines
+    *  4. Rotate slowly: 'A' or 'D; - Turn with respect to te lines
     *  4. Buzzer: 'B'
     *  5. Pick and Place mechanism: 'P'
     *  6. Camera servo: 'C'
@@ -218,13 +217,14 @@ void loop()
         // Loop until bot is on the line
         while(1)
         {
-           // If turning right, slow down when right sensor is on line
-           // If turning left, slow down when left sensor is on line
-           //if (get_bot_position()== -1 || get_bot_position() == 1)
-           //{
-           //   analogWrite(enable_right_motor, 160);
-           //   analogWrite(enable_left_motor, 160);
-           //}
+           /* If turning right, slow down when right sensor is on line
+            * // If turning left, slow down when left sensor is on line 
+            * //if (get_bot_position()== -1 || get_bot_position() == 1)
+            * //{
+            * //   analogWrite(enable_right_motor, 160);
+            * //   analogWrite(enable_left_motor, 160);
+            * //}
+            */
            if (get_bot_position() == 0)
            {
               cancel_inertia();
@@ -255,13 +255,6 @@ void loop()
         // Loop until bot is on the line
         while(1)
         {
-           // If turning right, slow down when right sensor is on line
-           // If turning left, slow down when left sensor is on line
-           //if (get_bot_position()== -1 || get_bot_position() == 1)
-           //{
-           //   analogWrite(enable_right_motor, 160);
-           //   analogWrite(enable_left_motor, 160);
-           //}
            if (get_bot_position() == 0)
            {
               cancel_inertia();
@@ -387,12 +380,14 @@ void loop()
         job_done_flag = 1;
      }
 
+     /*
      else if (data == 'I')
      {
         // Calibrate the line sensors
         line_sensor_calibrate();
         job_done_flag = 1;
      }
+     */
   }
    
   // If job is done, send "Job done" signal to Pi
@@ -433,6 +428,12 @@ bool movement(int number_of_nodes)
       {
          node_flag = 1;
          node_count ++;
+         if (node_count < number_of_nodes)
+         {
+            analogWrite(enable_left_motor, left_motor_base_pwm);
+            analogWrite(enable_right_motor, right_motor_base_pwm);
+            delay(150);
+         }
       }
       // If node_count = number_of_nodes, stop the bot
       if(node_count == number_of_nodes)
@@ -469,6 +470,7 @@ bool movement(int number_of_nodes)
  *                  7. Find the threshold for each sensor by taking the average of white and black value
  *  Example Call  : line_sensor_calibrate()
  */
+/*
 void line_sensor_calibrate()
 {
    // Initialize the local variables
@@ -560,7 +562,7 @@ void line_sensor_calibrate()
    Serial.print(", Right sensor threshold ");
    Serial.println( right_sensor_threshold);
 }
-
+*/
 /* 
  *  Function Name : set_robot_movement
  *  Input         : None
@@ -823,6 +825,7 @@ void cancel_inertia()
  *  Logic         : When the central line sensor is detecting black area, turn the bot in such a way it detects the black region
  *  Example Call  : set_bot_on_line()
  */
+/*
 void set_bot_on_line()
 {
   int left_sensor_value = analogRead(left_line_sensor);
@@ -830,31 +833,30 @@ void set_bot_on_line()
   int right_sensor_value = analogRead(right_line_sensor);
   right_motor_pwm = right_motor_base_pwm;
   left_motor_pwm = left_motor_base_pwm;
-  /*  Black Line: "Greater than/equal to" sensor_threshold
-   *  White Line: "Lesser than/equal to" sensor_threshold
-   */
+  //  Black Line: "Greater than/equal to" sensor_threshold
+  //  White Line: "Lesser than/equal to" sensor_threshold
+   
 
   
-  /*  Left Sensor on White space
-   *  Center Sensor on White space
-   *  Right Sensor on Black
-   */
+  //  Left Sensor on White space
+  //  Center Sensor on White space
+  //  Right Sensor on Black
+  //
   if (left_sensor_value <= left_sensor_threshold &&
       center_sensor_value <= center_sensor_threshold &&
       right_sensor_value >= right_sensor_threshold)
   {
-  
   }
 
-  /*  Left Sensor on White space
-   *  Center Sensor on Black
-   *  Right Sensor on White space
-   */
+  //  Left Sensor on White space
+  //  Center Sensor on Black
+  //  Right Sensor on White space
+  //
 
-  /*  Left Sensor on Black
-   *  Center Sensor on White space
-   *  Right Sensor on White space
-   */
+  //  Left Sensor on Black
+  //  Center Sensor on White space
+  //  Right Sensor on White space
+  //
   else if (left_sensor_value >= left_sensor_threshold &&
            center_sensor_value <= center_sensor_threshold &&
            right_sensor_value <= right_sensor_threshold)
@@ -867,3 +869,4 @@ void set_bot_on_line()
       left_motor_pwm += (motor_speed_variation/2);
   }
 }
+*/

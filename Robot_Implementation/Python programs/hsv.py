@@ -12,10 +12,9 @@ def getthresholdedimg(hsv):
 def getTrackValue(value):
 	return value
 
-#c = cv2.VideoCapture(0)
-c = cv2.imread("align.jpg")
-#width,height = c.get(3),c.get(4)
-#print("frame width and height : ", width, height)
+c = cv2.VideoCapture(0)
+width,height = c.get(3),c.get(4)
+print("frame width and height : ", width, height)
 
 #Create trackbars 
 cv2.namedWindow('Output')
@@ -29,8 +28,8 @@ cv2.createTrackbar('Value_High','Trackbars',0,255, getTrackValue)
 cv2.createTrackbar('Caliberate','Trackbars',0,1, getTrackValue)
 
 while(1):
-	#_,f = c.read()
-	f = cv2.flip(c,1)
+	_,f = c.read()
+	f = cv2.flip(f,1)
 	# Convert BGR to HSV
 	hsv = cv2.cvtColor(f,cv2.COLOR_BGR2HSV)
 	thrImg = getthresholdedimg(hsv)

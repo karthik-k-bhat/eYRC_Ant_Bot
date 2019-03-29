@@ -5,7 +5,6 @@ from aruco_lib import *
 import os
 aruco_id = None
 """
-
 def detect_color(path_to_image,angle):  # color detection function
     # taking 3 points from the image to get its bgr values
     # for 135 degrees  = [(150,160),(263,33),(370,155)]
@@ -24,7 +23,7 @@ def detect_color(path_to_image,angle):  # color detection function
         for i in range(140,480):
             for j in range(212,470):
                 px.append(list(img[j,i]))
-        
+
     if(angle==-4 or angle==-5):
         for i in range(300,610):
             for j in range(2,310):
@@ -52,9 +51,9 @@ def detect_color(path_to_image):
         kernel = np.ones((5, 5), np.uint8)
         #cv2.imshow("frame",frame)
         #cv2.waitKey(0)
-        blue =[[84, 166, 114],[169, 248, 245]]
-        green=[[65, 75, 49],[112, 147, 152]]
-        red = [[164, 157, 68],[255, 255, 255]]
+        blue =[[85, 101, 95],[165, 255, 255]]
+        green=[[52, 58, 59],[86, 225, 201]]
+        red = [[119, 37, 75],[255, 238, 255]]
         color_range=np.array([red,green,blue])
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -81,7 +80,7 @@ def detect_color(path_to_image):
             return color_identified+1
         return 0
         
-print(detect_color("align.jpg"))
+#print(detect_color("align.jpg"))
 
 def detect_sim_id(path_to_image):
     global aruco_id
@@ -95,10 +94,10 @@ def detect_sim_id(path_to_image):
     else:
         #to start detecting the shape of the arucoId and its corresponding center
         kernel = np.ones((5, 5), np.uint8)
-        color_range=np.array([[0, 0, 0], [180, 250, 100]])
+        color_range=np.array([[0, 0, 0], [180, 250, 50]])
         # convert the frame to HSV co-ordinates
         frame = cv2.imread(path_to_image)
-        cv2.imshow("frame",frame)
+        #cv2.imshow("frame",frame)
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # mask -> to apply filter to the image based on color range
         mask = cv2.inRange(hsv, color_range[0], color_range[1])
@@ -111,17 +110,14 @@ def detect_sim_id(path_to_image):
         # calculating the x-center and y-center
         (x, y) = ((max(object[:, :, 0])+min(object[:, :, 0]))//2, (max(object[:, :, 1])+min(object[:, :, 1]))//2) 
         #print(x,y)
-        if(x<=320):
-            #print("arucoid left")
-            if(x<=90):
-                return (-3,False)
-            if(x>90 and x<=)
+        if(x<=213):
+#            print("arucoid left")
             return (-1,False)
         elif(x>213 and x<416 ):
-            #print("arucoid center")
+#            print("arucoid center")
             return (0,False)
         elif(x>=416):
-            #print("arucoid right")
+#            print("arucoid right")
             return (1,False)
         # cv2.imshow("mask",mask)
         # cv2.waitKey(0)
@@ -134,7 +130,7 @@ def detect_sim_id(path_to_image):
 
 def detect_trash(path_to_image):
     kernel = np.ones((5, 5), np.uint8)
-    color_range=np.array([[0, 135, 135], [32, 255, 255]])
+    color_range=np.array([[8, 59, 93], [59, 255, 255]])
     # convert the frame to HSV co-ordinates
     frame = cv2.imread(path_to_image)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -148,13 +144,13 @@ def detect_trash(path_to_image):
     #cv2.waitKey(0)
     # contours -> set of points which are in white
     contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-    object = 0
+    object = []
     if contours:
         # maximum area -> the ball
         object = max(contours, key=len)
     if(len(object)>60):
-        return "True"
-    return "False"
+        return True
+    return False
 
 def bot_align(image,color):    #for aligning the bot after the color detection
     kernel = np.ones((5, 5), np.uint8)
@@ -181,6 +177,8 @@ def bot_align(image,color):    #for aligning the bot after the color detection
     mask = cv2.dilate(mask, kernel, iterations=1)
     # contours -> set of points which are in white
     contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+    x=0
+    y=0
     if contours:
         # maximum area -> the ball
         object = max(contours, key=len)
