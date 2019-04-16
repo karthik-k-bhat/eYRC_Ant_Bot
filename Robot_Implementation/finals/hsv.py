@@ -13,7 +13,7 @@ def getTrackValue(value):
 	return value
 
 #c = cv2.VideoCapture(0)
-c = cv2.imread("B3.jpg")
+c = cv2.imread("audi_test.jpg")
 #width,height = c.get(3),c.get(4)
 #print("frame width and height : ", width, height)
 

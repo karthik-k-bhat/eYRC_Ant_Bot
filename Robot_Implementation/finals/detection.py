@@ -80,7 +80,7 @@ def detect_color(path_to_image):
             return color_identified+1
         return 0
         
-#print(detect_color("align.jpg"))
+print(detect_color("final5.jpg"))
 
 def detect_sim_id(path_to_image):
     global aruco_id
@@ -190,4 +190,4 @@ def bot_align(image,color):    #for aligning the bot after the color detection
     elif (x-416>0):
             return 1
 
-print(detect_sim_id("Sim3.jpg"))
+#print(detect_sim_id("Sim3.jpg"))
