@@ -1,0 +1,12 @@
+Check functions:
+    run_bot               ~
+    get_block_colour      ~
+    get_sims              .
+    is_qah                x
+    service               x
+    move_to_node          x
+    move                  x
+    turn                  x
+    get_turn_angle        x
+    talk_to_arduino       x
+    id_to_ant_hill        x
